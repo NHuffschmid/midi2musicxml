@@ -3,14 +3,14 @@ import { midi2MusicXML } from './index';
 
 // Worker message handler
 self.onmessage = async (event: MessageEvent) => {
-  const { midiBytes, title, composer } = event.data;
+  const { midiBytes, options } = event.data;
 
   try {
     // Parse MIDI from bytes
     const midi = new Midi(midiBytes);
 
     // Convert to MusicXML (synchronous in worker)
-    const xml = midi2MusicXML(midi, title, composer);
+    const xml = midi2MusicXML(midi, options);
 
     // Send result back
     self.postMessage({ success: true, xml });

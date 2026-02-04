@@ -8,14 +8,19 @@ import { analyseKey } from './analysis/analyseKey';
 import { scoreToXml } from './render/scoreToXml';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
 
+export interface Midi2MusicXMLOptions {
+  title?: string;
+  composer?: string;
+  mode?: 'piano' | 'violin' | 'viola' | 'cello';
+}
+
 export function midi2MusicXML(
   midi: Midi,
-  title?: string,
-  composer?: string
+  options: Midi2MusicXMLOptions = {}
 ): string {
 
-  const scoreTitle = title ?? analyzeTitle(midi);
-  const scoreComposer = composer ?? analyzeComposer(midi);
+  const scoreTitle = options.title ?? analyzeTitle(midi);
+  const scoreComposer = options.composer ?? analyzeComposer(midi);
   const copyright = analyzeCopyright(midi);
   const tempo = analyzeTempo(midi);
 
@@ -81,5 +86,5 @@ export function midi2MusicXML(
   };
 
   // Render as MusicXML
-  return scoreToXml(score);
+  return scoreToXml(score, options.mode ?? 'piano');
 }
