@@ -31,19 +31,10 @@ export type Section = {
     };
 };
 
-export type Voice = {
-    clef: 'treble' | 'bass';
-    sections: Section[];
-};
-
-export type System = {
-    voices: Voice[];
-};
-
 export type Score = {
     title?: string;
     composer?: string;
     copyright?: string;
-    system: System;
+    sections: Section[];
 };
 
