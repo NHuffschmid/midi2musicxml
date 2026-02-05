@@ -1,4 +1,4 @@
-import { Note, Measure, Section, Score } from './types';
+import { Note, Measure, Section, Score, ClefType } from './types';
 import { Midi } from '@tonejs/midi';
 import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
@@ -11,7 +11,7 @@ import { collectAndSortNotes } from './utils/collectAndSortNotes';
 export interface Midi2MusicXMLOptions {
   title?: string;
   composer?: string;
-  clef?: 'piano' | 'violin' | 'viola' | 'cello';
+  clef?: ClefType;
 }
 
 export function midi2MusicXML(

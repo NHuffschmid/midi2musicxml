@@ -1,3 +1,6 @@
+// Supported rendering clef types
+export type ClefType = 'piano' | 'violin' | 'viola' | 'cello';
+
 // MusicXML Model Types
 
 export type Note = {
