@@ -11,7 +11,7 @@ import { collectAndSortNotes } from './utils/collectAndSortNotes';
 export interface Midi2MusicXMLOptions {
   title?: string;
   composer?: string;
-  mode?: 'piano' | 'violin' | 'viola' | 'cello';
+  clef?: 'piano' | 'violin' | 'viola' | 'cello';
 }
 
 export function midi2MusicXML(
@@ -86,5 +86,5 @@ export function midi2MusicXML(
   };
 
   // Render as MusicXML
-  return scoreToXml(score, options.mode ?? 'piano');
+  return scoreToXml(score, options.clef ?? 'piano');
 }
