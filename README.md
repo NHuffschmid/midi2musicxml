@@ -14,9 +14,15 @@ A TypeScript/JavaScript module for converting MIDI files to MusicXML.
 import { midi2MusicXML } from 'midi2musicxml';
 import { Midi } from '@tonejs/midi';
 
-const midi = new Midi(/* ... */);
-const musicXml = midi2MusicXML(midi);
-console.log(musicXml);
+async function convertMidiFile(url) {
+	const response = await fetch(url);
+	const arrayBuffer = await response.arrayBuffer();
+	const midi = new Midi(arrayBuffer);
+	const musicXml = midi2MusicXML(midi);
+	console.log(musicXml);
+}
+
+convertMidiFile('https://www.mutopiaproject.org/ftp/BeethovenLv/WoO59/fur_Elise_WoO59/fur_Elise_WoO59.mid');
 ```
 
 ## Project Structure
@@ -29,7 +35,7 @@ console.log(musicXml);
 MIT
 
 ## Author
-Norbert Huffschmid
+Norbert Huffschmid <depinus@gmx.de>
 
 ## Contributing
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
