@@ -11,13 +11,14 @@ export function collectAndSortNotes(midi: Midi, pulsesPerQuarterNote: number): N
   for (const track of midi.tracks) {
     for (const note of track.notes) {
       const { step, alter, octave } = midiNoteToPitch(note.midi);
-      const { duration, type } = midiTicksToXmlDurationType(note.durationTicks, pulsesPerQuarterNote);
+      const { duration, type, dots } = midiTicksToXmlDurationType(note.durationTicks, pulsesPerQuarterNote);
       notes.push({
         step,
         alter,
         octave,
         duration,
         type,
+        dots,
         tick: note.ticks ?? note.time ?? 0,
       });
     }

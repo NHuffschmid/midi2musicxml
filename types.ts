@@ -9,6 +9,7 @@ export type Note = {
     octave: number;
     duration: number;
     type: string;
+    dots?: number;
     isRest?: boolean;
     tick?: number;
 };
