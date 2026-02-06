@@ -25,7 +25,8 @@ export function midi2MusicXML(
   const tempo = analyzeTempo(midi);
 
   // Collect and sort all notes from all tracks
-  const notes: Note[] = collectAndSortNotes(midi);
+  const pulsesPerQuarterNote = midi.header.ppq || 12;
+  const notes: Note[] = collectAndSortNotes(midi, pulsesPerQuarterNote);
   if (notes.length === 0) return '';
 
   // Helper function to create measures and fill with rests
@@ -64,7 +65,6 @@ export function midi2MusicXML(
   const section: Section = {
     measures,
     attributes: {
-      divisions: 1,
       time: { beats: 4, beatType: 4 },
       key: undefined,
     },
@@ -82,6 +82,7 @@ export function midi2MusicXML(
     title: scoreTitle,
     composer: scoreComposer,
     copyright,
+    pulsesPerQuarterNote,
     sections: [section],
   };
 

@@ -8,14 +8,16 @@ export function measureToXml(measure: Measure, section: Section): string {
     let soundXml = '';
     if (isFirstMeasure) {
         const attr = section.attributes;
+        attrXml = `<attributes>\n`;
+        const score = (section as any).score;
+        const pulsesPerQuarterNote = score?.pulsesPerQuarterNote || 12;
+        attrXml += `  <divisions>${pulsesPerQuarterNote}</divisions>\n`;
         if (attr) {
-            attrXml = `<attributes>\n`;
-            if (attr.divisions) attrXml += `  <divisions>${attr.divisions}</divisions>\n`;
             if (attr.key !== undefined) attrXml += `  <key>\n    <fifths>${attr.key}</fifths>\n  </key>\n`;
             if (attr.time) attrXml += `  <time>\n    <beats>${attr.time.beats}</beats>\n    <beat-type>${attr.time.beatType}</beat-type>\n  </time>\n`;
             if (attr.clef) attrXml += `  <clef>\n    <sign>${attr.clef.sign}</sign>\n    <line>${attr.clef.line}</line>\n  </clef>\n`;
-            attrXml += `</attributes>\n`;
         }
+        attrXml += `</attributes>\n`;
         if (section.direction) {
             directionXml = `<direction placement=\"above\">\n  <direction-type>\n    <metronome>\n      <beat-unit>${section.direction.beatUnit || 'quarter'}</beat-unit>\n      <per-minute>${section.direction.tempo}</per-minute>\n    </metronome>\n  </direction-type>\n  <sound tempo=\"${section.direction.tempo}\"/>\n</direction>\n`;
         }
