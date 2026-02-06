@@ -7,6 +7,7 @@ import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { analyseKey } from './analysis/analyseKey';
 import { scoreToXml } from './render/scoreToXml';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
+import { setBeams } from './utils/beamUtils';
 
 export interface Midi2MusicXMLOptions {
   title?: string;
@@ -87,5 +88,10 @@ export function midi2MusicXML(
   };
 
   // Render as MusicXML
-  return scoreToXml(score, options.clef ?? 'piano');
+  let musicXml = scoreToXml(score, options.clef ?? 'piano');
+
+  // optimize and beautify MusicXML document
+  musicXml = setBeams(musicXml);
+
+  return musicXml;
 }
