@@ -1,4 +1,4 @@
-import { RenderNote } from './renderingUtils';
+import { RenderNote } from '../types';
 
 export function noteToXml(note: RenderNote): string {
     const dotXml = note.dots && note.dots > 0 ? '\n  ' + '<dot/>'.repeat(note.dots) : '';

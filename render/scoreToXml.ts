@@ -1,7 +1,6 @@
-
 import { Score, Section } from '../types';
 import { sectionToXml } from './sectionToXml';
-import { assignNotesToMeasures, detectChords, fillMeasuresWithRests, RenderNote } from './renderingUtils';
+import { assignNotesToMeasures, detectChords, fillMeasuresWithRests } from './renderingUtils';
 
 export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'cello' = 'piano'): string {
     if (!['piano', 'violin', 'viola', 'cello'].includes(mode)) {
@@ -21,6 +20,15 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
         // Create measures for each part
         const trebleMeasures = assignNotesToMeasures(trebleNotes, timeSignature);
         const bassMeasures = assignNotesToMeasures(bassNotes, timeSignature);
+        
+        // Ensure both parts have the same number of measures
+        const maxMeasures = Math.max(trebleMeasures.length, bassMeasures.length);
+        while (trebleMeasures.length < maxMeasures) {
+            trebleMeasures.push({ notes: [] });
+        }
+        while (bassMeasures.length < maxMeasures) {
+            bassMeasures.push({ notes: [] });
+        }
         
         // Detect chords in each part
         for (const measure of trebleMeasures) {

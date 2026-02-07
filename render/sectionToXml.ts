@@ -1,6 +1,5 @@
-import { Section } from '../types';
+import { Section, RenderMeasure } from '../types';
 import { measureToXml } from './measureToXml';
-import { RenderMeasure } from './renderingUtils';
 
 export function sectionToXml(section: Section): string {
     // section now has a temporary measures property added by scoreToXml

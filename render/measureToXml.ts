@@ -1,5 +1,4 @@
-import { Section } from '../types';
-import { RenderMeasure } from './renderingUtils';
+import { Section, RenderMeasure } from '../types';
 import { noteToXml } from './noteToXml';
 
 export function measureToXml(measure: RenderMeasure, section: Section): string {
