@@ -23,5 +23,9 @@ export function measureToXml(measure: Measure, section: Section): string {
         }
         soundXml = section.sound && !section.direction ? `<sound tempo=\"${section.sound.tempo}\"/>\n` : '';
     }
-    return `<measure>\n${attrXml}${directionXml}${soundXml}${measure.notes.map(noteToXml).join('\n')}\n</measure>`;
+    return `<measure>\n${attrXml}${directionXml}${soundXml}` +
+        measure.notes
+            .map(noteToXml)
+            .join('\n') +
+        '\n</measure>';
 }

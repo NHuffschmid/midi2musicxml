@@ -33,6 +33,23 @@ export function midi2MusicXML(
   // Helper function to create measures and fill with rests
   function createMeasures(noteList: Note[]): Measure[] {
     const measures: Measure[] = [];
+    const CHORD_TICK_TOLERANCE = 20;
+    // Mark chord notes in noteList
+    let lastTick: number | null = null;
+    for (let i = 0; i < noteList.length; i++) {
+      const note = noteList[i];
+      let isChord = false;
+      if (
+        lastTick !== null &&
+        note.tick !== undefined &&
+        Math.abs(note.tick - lastTick) <= CHORD_TICK_TOLERANCE
+      ) {
+        isChord = true;
+      }
+      lastTick = note.tick ?? lastTick;
+      note.isChord = isChord;
+    }
+    // Split notes into measures
     for (let i = 0; i < noteList.length; i += 4) {
       const measureNotes = noteList.slice(i, i + 4);
       while (measureNotes.length < 4) {

@@ -12,6 +12,7 @@ export type Note = {
     dots?: number;
     isRest?: boolean;
     tick?: number;
+    isChord?: boolean;
 };
 
 export type Measure = {
