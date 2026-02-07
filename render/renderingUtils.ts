@@ -1,15 +1,7 @@
-import { Note, Measure } from '../types';
+
+import { Note, RenderNote, RenderMeasure } from '../types';
 
 const CHORD_TICK_TOLERANCE = 20;
-
-export interface RenderNote extends Note {
-  isRest?: boolean;
-  isChord?: boolean;
-}
-
-export interface RenderMeasure {
-  notes: RenderNote[];
-}
 
 /**
  * Assigns notes to measures based on time signature.

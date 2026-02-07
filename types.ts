@@ -1,6 +1,16 @@
 // Supported rendering clef types
 export type ClefType = 'piano' | 'violin' | 'viola' | 'cello';
 
+// --- Render-specific Types ---
+export interface RenderNote extends Note {
+    isRest?: boolean;
+    isChord?: boolean;
+}
+
+export interface RenderMeasure {
+    notes: RenderNote[];
+}
+
 // MusicXML Model Types
 
 export type Note = {
