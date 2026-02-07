@@ -4,22 +4,35 @@ import { Note, RenderNote, RenderMeasure } from '../types';
 const CHORD_TICK_TOLERANCE = 20;
 
 /**
- * Assigns notes to measures based on time signature.
- * For now, uses a simple approach: 4 notes per measure.
- * Can be enhanced later with more sophisticated logic.
+ * Assigns notes to measures based on their tick values and time signature.
+ * Each note is placed in the measure corresponding to its tick position.
+ * Empty measures are created before the first note if needed.
  */
-export function assignNotesToMeasures(notes: Note[], timeSignature: { beats: number; beatType: number }): RenderMeasure[] {
+export function assignNotesToMeasures(
+  notes: Note[], 
+  timeSignature: { beats: number; beatType: number },
+  pulsesPerQuarterNote: number = 480
+): RenderMeasure[] {
+  const measureLength = timeSignature.beats * pulsesPerQuarterNote;
   const measures: RenderMeasure[] = [];
-  const notesPerMeasure = timeSignature.beats; // Simple approach: one note per beat
   
-  for (let i = 0; i < notes.length; i += notesPerMeasure) {
-    const measureNotes = notes.slice(i, i + notesPerMeasure);
-    measures.push({ notes: measureNotes });
+  if (notes.length === 0) {
+    measures.push({ notes: [] });
+    return measures;
   }
   
-  // If no notes present, create at least one empty measure
-  if (measures.length === 0) {
-    measures.push({ notes: [] });
+  // Find the measure index for each note based on its tick value
+  for (const note of notes) {
+    const tick = note.tick ?? 0;
+    const measureIndex = Math.floor(tick / measureLength);
+    
+    // Ensure we have enough measures (create empty ones if needed)
+    while (measures.length <= measureIndex) {
+      measures.push({ notes: [] });
+    }
+    
+    // Add note to the appropriate measure
+    measures[measureIndex].notes.push(note);
   }
   
   return measures;

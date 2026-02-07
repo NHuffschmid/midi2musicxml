@@ -17,9 +17,9 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
         const trebleNotes = section.notes.filter(note => note.octave >= 4);
         const bassNotes = section.notes.filter(note => note.octave < 4);
         
-        // Create measures for each part
-        const trebleMeasures = assignNotesToMeasures(trebleNotes, timeSignature);
-        const bassMeasures = assignNotesToMeasures(bassNotes, timeSignature);
+        // Create measures for each part (tick-based)
+        const trebleMeasures = assignNotesToMeasures(trebleNotes, timeSignature, score.pulsesPerQuarterNote);
+        const bassMeasures = assignNotesToMeasures(bassNotes, timeSignature, score.pulsesPerQuarterNote);
         
         // Ensure both parts have the same number of measures
         const maxMeasures = Math.max(trebleMeasures.length, bassMeasures.length);
@@ -85,7 +85,7 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
     }
     
     // Create measures and detect chords
-    const measures = assignNotesToMeasures(section.notes, timeSignature);
+    const measures = assignNotesToMeasures(section.notes, timeSignature, score.pulsesPerQuarterNote);
     for (const measure of measures) {
         measure.notes = detectChords(measure.notes);
     }
