@@ -10,9 +10,7 @@ export type Note = {
     duration: number;
     type: string;
     dots?: number;
-    isRest?: boolean;
     tick?: number;
-    isChord?: boolean;
 };
 
 export type Measure = {
@@ -20,7 +18,7 @@ export type Measure = {
 };
 
 export type Section = {
-    measures: Measure[];
+    notes: Note[];
     attributes?: {
         key?: string;
         time?: { beats: number; beatType: number };

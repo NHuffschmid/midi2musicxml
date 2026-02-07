@@ -1,8 +1,12 @@
-import { Measure, Section } from '../types';
+import { Section } from '../types';
+import { RenderMeasure } from './renderingUtils';
 import { noteToXml } from './noteToXml';
 
-export function measureToXml(measure: Measure, section: Section): string {
-    const isFirstMeasure = section.measures[0] === measure;
+export function measureToXml(measure: RenderMeasure, section: Section): string {
+    // Check if this is the first measure by looking at the temporary measures array
+    const measures = (section as any).measures as RenderMeasure[];
+    const isFirstMeasure = measures && measures[0] === measure;
+    
     let attrXml = '';
     let directionXml = '';
     let soundXml = '';

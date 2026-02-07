@@ -1,6 +1,6 @@
-import { Note } from '../types';
+import { RenderNote } from './renderingUtils';
 
-export function noteToXml(note: Note & { isChord?: boolean }): string {
+export function noteToXml(note: RenderNote): string {
     const dotXml = note.dots && note.dots > 0 ? '\n  ' + '<dot/>'.repeat(note.dots) : '';
     const chordXml = note.isChord ? '\n  <chord/>' : '';
     if (note.isRest) {
