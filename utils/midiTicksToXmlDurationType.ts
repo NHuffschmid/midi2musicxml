@@ -25,18 +25,32 @@ export function midiTicksToXmlDurationType(
     { name: 'dotted 64th', factor: 0.09375, dots: 1 },
     { name: '64th', factor: 0.0625, dots: 0 },
   ];
-  for (const entry of typeMap) {
-    if (Math.abs(durationTicks - pulsesPerQuarterNote * entry.factor) < pulsesPerQuarterNote * 0.1) {
-      // Remove 'dotted ' prefix for MusicXML type
-      const type = entry.name.startsWith('dotted ')
-        ? entry.name.replace('dotted ', '')
-        : entry.name;
-      return {
-        duration: pulsesPerQuarterNote * entry.factor,
-        type,
-        dots: entry.dots,
-      };
+  // Only allow up to one dot (no double/triple dotted notes)
+  const filteredTypeMap = typeMap.filter(entry => entry.dots <= 1);
+  let bestMatch = filteredTypeMap[0];
+  let bestDiff = Math.abs(durationTicks - pulsesPerQuarterNote * bestMatch.factor);
+  for (const entry of filteredTypeMap) {
+    const diff = Math.abs(durationTicks - pulsesPerQuarterNote * entry.factor);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestMatch = entry;
     }
+  }
+  if (bestDiff < pulsesPerQuarterNote * 0.1) {
+    const type = bestMatch.name.startsWith('dotted ')
+      ? bestMatch.name.replace('dotted ', '')
+      : bestMatch.name;
+    
+    // Safety check: ensure dots never exceeds 1
+    const safeDots = Math.min(bestMatch.dots, 1);
+    
+    console.log(`[midiTicksToXmlDurationType] durationTicks=${durationTicks}, matched type=${type}, dots=${safeDots}, duration=${pulsesPerQuarterNote * bestMatch.factor}`);
+    
+    return {
+      duration: pulsesPerQuarterNote * bestMatch.factor,
+      type,
+      dots: safeDots,
+    };
   }
   // Fallback: treat as quarter
   console.warn(

@@ -51,6 +51,7 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
             },
         };
         (trebleSection as any).measures = trebleMeasuresFilled;
+        (trebleSection as any).score = score;
         
         const bassSection: Section = {
             ...section,
@@ -61,6 +62,7 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
             },
         };
         (bassSection as any).measures = bassMeasuresFilled;
+        (bassSection as any).score = score;
         
         const partList = [
             `<score-part id=\"P1\">\n      <part-name> </part-name>\n    </score-part>`,
@@ -100,6 +102,7 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
         },
     };
     (singleSection as any).measures = measuresFilled;
+    (singleSection as any).score = score;
     
     const partList = `<score-part id=\"P1\">\n      <part-name>${partName}</part-name>\n    </score-part>`;
     const partsXml = `<part id=\"P1\">\n${sectionToXml(singleSection)}\n</part>`;
