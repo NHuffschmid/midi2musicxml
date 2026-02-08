@@ -1,6 +1,6 @@
 import { Score, Section } from '../types';
 import { sectionToXml } from './sectionToXml';
-import { assignNotesToMeasures, detectChords, fillMeasuresWithRests } from './renderingUtils';
+import { assignNotesToMeasures, detectChords, fillMeasuresWithRests } from '../utils/renderingUtils';
 
 export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'cello' = 'piano'): string {
     if (!['piano', 'violin', 'viola', 'cello'].includes(mode)) {
