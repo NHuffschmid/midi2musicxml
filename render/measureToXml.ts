@@ -11,6 +11,7 @@ export function measureToXml(measure: RenderMeasure, section: Section): string {
     let soundXml = '';
     if (isFirstMeasure) {
         const attr = section.attributes;
+        const isPiano = (section as any).isPiano;
         attrXml = `<attributes>\n`;
         const score = (section as any).score;
         const pulsesPerQuarterNote = score?.pulsesPerQuarterNote || 12;
@@ -18,7 +19,14 @@ export function measureToXml(measure: RenderMeasure, section: Section): string {
         if (attr) {
             if (attr.key !== undefined) attrXml += `  <key>\n    <fifths>${attr.key}</fifths>\n  </key>\n`;
             if (attr.time) attrXml += `  <time>\n    <beats>${attr.time.beats}</beats>\n    <beat-type>${attr.time.beatType}</beat-type>\n  </time>\n`;
-            if (attr.clef) attrXml += `  <clef>\n    <sign>${attr.clef.sign}</sign>\n    <line>${attr.clef.line}</line>\n  </clef>\n`;
+            // For piano mode, define both clefs
+            if (isPiano) {
+                attrXml += `  <staves>2</staves>\n`;
+                attrXml += `  <clef number="1">\n    <sign>G</sign>\n    <line>2</line>\n  </clef>\n`;
+                attrXml += `  <clef number="2">\n    <sign>F</sign>\n    <line>4</line>\n  </clef>\n`;
+            } else if (attr.clef) {
+                attrXml += `  <clef>\n    <sign>${attr.clef.sign}</sign>\n    <line>${attr.clef.line}</line>\n  </clef>\n`;
+            }
         }
         attrXml += `</attributes>\n`;
         if (section.direction) {

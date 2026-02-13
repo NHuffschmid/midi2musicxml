@@ -5,6 +5,7 @@ export type ClefType = 'piano' | 'violin' | 'viola' | 'cello';
 export interface RenderNote extends Note {
     isRest?: boolean;
     isChord?: boolean;
+    staff?: number; // For piano mode: 1 = treble, 2 = bass
 }
 
 export interface RenderMeasure {

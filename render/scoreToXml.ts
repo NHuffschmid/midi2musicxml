@@ -13,15 +13,15 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
     const timeSignature = section.attributes?.time ?? { beats: 4, beatType: 4 };
 
     if (mode === 'piano') {
-        // Piano: split into treble and bass
+        // Piano: one part with two staves (treble and bass)
         const trebleNotes = section.notes.filter(note => note.octave >= 4);
         const bassNotes = section.notes.filter(note => note.octave < 4);
         
-        // Create measures for each part (tick-based)
+        // Create measures for each staff (tick-based)
         const trebleMeasures = assignNotesToMeasures(trebleNotes, timeSignature, score.pulsesPerQuarterNote);
         const bassMeasures = assignNotesToMeasures(bassNotes, timeSignature, score.pulsesPerQuarterNote);
         
-        // Ensure both parts have the same number of measures
+        // Ensure both staves have the same number of measures
         const maxMeasures = Math.max(trebleMeasures.length, bassMeasures.length);
         while (trebleMeasures.length < maxMeasures) {
             trebleMeasures.push({ notes: [] });
@@ -30,7 +30,7 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
             bassMeasures.push({ notes: [] });
         }
         
-        // Detect chords in each part
+        // Detect chords in each staff
         for (const measure of trebleMeasures) {
             measure.notes = detectChords(measure.notes);
         }
@@ -42,36 +42,37 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
         const trebleMeasuresFilled = fillMeasuresWithRests(trebleMeasures, timeSignature, 4);
         const bassMeasuresFilled = fillMeasuresWithRests(bassMeasures, timeSignature, 2);
         
-        const trebleSection: Section = {
+        // Assign staff numbers to notes
+        for (const measure of trebleMeasuresFilled) {
+            for (const note of measure.notes) {
+                note.staff = 1;
+            }
+        }
+        for (const measure of bassMeasuresFilled) {
+            for (const note of measure.notes) {
+                note.staff = 2;
+            }
+        }
+        
+        // Merge measures from both staves
+        const mergedMeasures = trebleMeasuresFilled.map((trebleMeasure, index) => ({
+            notes: [...trebleMeasure.notes, ...bassMeasuresFilled[index].notes]
+        }));
+        
+        const pianoSection: Section = {
             ...section,
             notes: [], // Will use measures instead
             attributes: {
                 ...section.attributes,
-                clef: { sign: 'G', line: 2 },
+                // Clefs will be handled in measureToXml for both staves
             },
         };
-        (trebleSection as any).measures = trebleMeasuresFilled;
-        (trebleSection as any).score = score;
+        (pianoSection as any).measures = mergedMeasures;
+        (pianoSection as any).score = score;
+        (pianoSection as any).isPiano = true; // Flag for measureToXml
         
-        const bassSection: Section = {
-            ...section,
-            notes: [], // Will use measures instead
-            attributes: {
-                ...section.attributes,
-                clef: { sign: 'F', line: 4 },
-            },
-        };
-        (bassSection as any).measures = bassMeasuresFilled;
-        (bassSection as any).score = score;
-        
-        const partList = [
-            `<score-part id=\"P1\">\n      <part-name> </part-name>\n    </score-part>`,
-            `<score-part id=\"P2\">\n      <part-name> </part-name>\n    </score-part>`
-        ].join('\n    ');
-        const partsXml = [
-            `<part id=\"P1\">\n${sectionToXml(trebleSection)}\n</part>`,
-            `<part id=\"P2\">\n${sectionToXml(bassSection)}\n</part>`
-        ].join('\n');
+        const partList = `<score-part id=\"P1\">\n      <part-name> </part-name>\n    </score-part>`;
+        const partsXml = `<part id=\"P1\">\n${sectionToXml(pianoSection)}\n</part>`;
         return `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<score-partwise version=\"3.1\">\n  <work>\n    <work-title>${score.title || ''}</work-title>\n  </work>\n  ${identification}  <part-list>\n    ${partList}\n  </part-list>\n${partsXml}\n</score-partwise>`;
     }
 
