@@ -62,3 +62,7 @@ export type MidiNote = { // according to tonejs/midi Note interface
   velocity: number;
   bars: number;
 }
+
+export type MidiMeasure = { // according to tonejs/midi bars info
+  notes: MidiNote[];
+}
