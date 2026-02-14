@@ -1,4 +1,4 @@
-import { Note, Measure, Section, Score, ClefType } from './types';
+import { MidiNote, Note, Measure, Section, Score, ClefType } from './types';
 import { Midi } from '@tonejs/midi';
 import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
@@ -7,6 +7,7 @@ import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { analyseKey } from './analysis/analyseKey';
 import { scoreToXml } from './render/scoreToXml';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
+import { collectMidiNotes } from './utils/collectMidiNotes';
 import { setBeams } from './utils/beamUtils';
 
 export interface Midi2MusicXMLOptions {
@@ -29,6 +30,8 @@ export function midi2MusicXML(
   const pulsesPerQuarterNote = midi.header.ppq || 12;
   const notes: Note[] = collectAndSortNotes(midi, pulsesPerQuarterNote);
   if (notes.length === 0) return '';
+  const midiNotes: MidiNote[] = collectMidiNotes(midi);
+  if (midiNotes.length === 0) return '';
 
   // Create section with notes (measures will be created during rendering)
   const section: Section = {

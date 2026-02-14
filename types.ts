@@ -52,3 +52,13 @@ export type Score = {
     sections: Section[];
 };
 
+export type MidiNote = { // according to tonejs/midi Note interface
+  midi: number;
+  name: string;
+  ticks: number;
+  time: number;
+  duration: number;
+  durationTicks: number;
+  velocity: number;
+  bars: number;
+}
