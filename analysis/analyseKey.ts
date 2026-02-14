@@ -71,7 +71,7 @@ export function analyseKey(section: Section): string {
   }
 
   // Collect all notes of the section
-  const allNotes: Note[] = section.measures?.flatMap(m => m.notes) ?? [];
+  const allNotes: Note[] = section.notes ?? section.measures?.flatMap(m => m.notes) ?? [];
   const notePitchClasses = allNotes.filter(n => !n.isRest).map(n => noteToPitchClass(n.step, n.alter));
 
   if (notePitchClasses.length === 0) {
