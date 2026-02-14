@@ -33,12 +33,20 @@ export function midi2MusicXML(
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
   if (midiNotes.length === 0) return '';
 
+  // Determine time signature from MIDI or use 4/4 as default
+  let time = { beats: 4, beatType: 4 };
+  if (midi.header.timeSignatures && midi.header.timeSignatures.length > 0) {
+    const ts = midi.header.timeSignatures[0].timeSignature;
+    if (Array.isArray(ts) && ts.length === 2) {
+      time = { beats: ts[0], beatType: ts[1] };
+    }
+  }
+
   // Create section with notes (measures will be created during rendering)
   const section: Section = {
     notes,
     attributes: {
-      time: { beats: 4, beatType: 4 },
-      key: undefined,
+      time,
     },
     direction: tempo ? { tempo, beatUnit: 'quarter' } : undefined,
     sound: tempo ? { tempo } : undefined,

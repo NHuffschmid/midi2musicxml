@@ -1,5 +1,7 @@
 import { DOMParser, XMLSerializer } from 'xmldom';
 
+// Does not work for Schumann's "Curious Story"!
+
 /**
  * Optimizes beams in all measures of a MusicXML document using xmldom.
  * Groups adjacent subdivision notes and adds <beam> elements.
