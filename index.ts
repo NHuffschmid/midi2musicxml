@@ -4,6 +4,7 @@ import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
 import { analyzeTempo } from './analysis/analyzeTempo';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
+import { analyzeBeats } from './analysis/analyzeBeats';
 import { analyseKey } from './analysis/analyseKey';
 import { scoreToXml } from './render/scoreToXml';
 import { collectAndSortNotes } from './utils/collectAndSortNotes';
@@ -36,14 +37,7 @@ export function midi2MusicXML(
 
   const midiMeasures: MidiMeasure[] = collectMidiMeasures(midiNotes);
 
-  // Determine time signature from MIDI or use 4/4 as default
-  let time = { beats: 4, beatType: 4 };
-  if (midi.header.timeSignatures && midi.header.timeSignatures.length > 0) {
-    const ts = midi.header.timeSignatures[0].timeSignature;
-    if (Array.isArray(ts) && ts.length === 2) {
-      time = { beats: ts[0], beatType: ts[1] };
-    }
-  }
+  const time = analyzeBeats(midi, midiNotes, midiMeasures);
 
   // Create section with notes (measures will be created during rendering)
   const section: Section = {
