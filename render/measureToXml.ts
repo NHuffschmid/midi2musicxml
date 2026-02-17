@@ -3,14 +3,10 @@ import { noteToXml } from './noteToXml';
 import { midiNoteToPitch } from '../utils/midiNoteToPitch';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
-export function measureToXml(measure: MidiMeasure, section: Section): string {
+export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQuarterNote: number): string {
     // Check if this is the first measure by looking at the temporary measures array
     const measures = section.measures;
     const isFirstMeasure = measures && measures[0] === measure;
-    
-    // Get pulsesPerQuarterNote from score
-    const score = (section as any).score;
-    const pulsesPerQuarterNote = score?.pulsesPerQuarterNote ?? 480;
     
     // Get section properties or use defaults
     const key = section.key ?? '0M';

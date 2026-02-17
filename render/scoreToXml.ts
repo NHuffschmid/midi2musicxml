@@ -110,6 +110,6 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
     */
 
     const partList = `<score-part id=\"P1\">\n      <part-name> </part-name>\n    </score-part>`;
-    const partsXml = `<part id=\"P1\">\n${sectionToXml(score.sections[0])}\n</part>`;
+    const partsXml = `<part id="P1">\n${sectionToXml(score.sections[0], score.pulsesPerQuarterNote)}\n</part>`;
     return `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<score-partwise version=\"3.1\">\n  <work>\n    <work-title>${score.title || ''}</work-title>\n  </work>\n  ${identification}  <part-list>\n    ${partList}\n  </part-list>\n${partsXml}\n</score-partwise>`;
 }
