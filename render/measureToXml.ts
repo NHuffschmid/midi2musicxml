@@ -1,9 +1,15 @@
-import { Section, RenderMeasure, MidiMeasure } from '../types';
+import { ClefType, Section, RenderMeasure, MidiMeasure } from '../types';
 import { noteToXml } from './noteToXml';
 import { midiNoteToPitch } from '../utils/midiNoteToPitch';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
-export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQuarterNote: number): string {
+export function measureToXml(
+    measure: MidiMeasure,
+    section: Section,
+    pulsesPerQuarterNote: number,
+    clef: ClefType)
+    : string {
+
     // Check if this is the first measure by looking at the temporary measures array
     const measures = section.measures;
     const isFirstMeasure = measures && measures[0] === measure;
@@ -26,6 +32,36 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
         // divisions = pulsesPerQuarterNote (duration units per quarter note)
         const divisions = pulsesPerQuarterNote;
 
+        // Build clef XML based on clef type
+        let clefXml = '';
+        if (clef === 'piano') {
+            // Piano: two staves with treble and bass clef
+            clefXml = `    <staves>2</staves>
+    <clef number="1">
+      <sign>G</sign>
+      <line>2</line>
+    </clef>
+    <clef number="2">
+      <sign>F</sign>
+      <line>4</line>
+    </clef>`;
+        } else {
+            // Single staff with appropriate clef
+            let sign = 'G';
+            let line = 2;
+            if (clef === 'viola') {
+                sign = 'C';
+                line = 3;
+            } else if (clef === 'cello') {
+                sign = 'F';
+                line = 4;
+            }
+            clefXml = `    <clef>
+      <sign>${sign}</sign>
+      <line>${line}</line>
+    </clef>`;
+        }
+
         attrXml = `  <attributes>
     <divisions>${divisions}</divisions>
     <key>
@@ -36,10 +72,7 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
       <beats>${time.beats}</beats>
       <beat-type>${time.beatType}</beat-type>
     </time>
-    <clef>
-      <sign>G</sign>
-      <line>2</line>
-    </clef>
+${clefXml}
   </attributes>`;
 
         if (tempo !== undefined) {
@@ -66,6 +99,13 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
             ? `    <alter>${alter}</alter>\n`
             : '';
         const dotXml = dots > 0 ? '\n  ' + '<dot/>'.repeat(dots) : '';
+        
+        // For piano mode, assign staff based on pitch (C4 = MIDI 60)
+        let staffXml = '';
+        if (clef === 'piano') {
+            const staffNum = midiNote.midi >= 60 ? 1 : 2; // C4 and above → staff 1, below C4 → staff 2
+            staffXml = `\n    <staff>${staffNum}</staff>`;
+        }
 
         return `  <note>
     <pitch>
@@ -73,7 +113,7 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
 ${alterXml}      <octave>${octave}</octave>
     </pitch>
     <duration>${duration}</duration>
-    <type>${type}</type>${dotXml}
+    <type>${type}</type>${dotXml}${staffXml}
   </note>`;
     }).join('\n');
 

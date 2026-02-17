@@ -1,5 +1,6 @@
 // Supported rendering clef types
-export type ClefType = 'piano' | 'violin' | 'viola' | 'cello';
+export const ClefTypes = ['piano', 'violin', 'viola', 'cello'] as const;
+export type ClefType = typeof ClefTypes[number];
 
 // --- Render-specific Types ---
 export interface RenderNote extends Note {
