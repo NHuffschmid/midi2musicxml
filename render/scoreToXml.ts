@@ -1,6 +1,6 @@
 import { Score, Section } from '../types';
 import { sectionToXml } from './sectionToXml';
-import { assignNotesToMeasures, detectChords, fillMeasuresWithRests } from '../utils/renderingUtils';
+//import { assignNotesToMeasures, detectChords, fillMeasuresWithRests } from '../utils/renderingUtils';
 
 export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'cello' = 'piano'): string {
     if (!['piano', 'violin', 'viola', 'cello'].includes(mode)) {
@@ -9,9 +9,10 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
     const identification = (score.composer || score.copyright)
         ? `<identification>\n${score.composer ? `    <creator type=\"composer\">${score.composer}</creator>\n` : ''}${score.copyright ? `<rights>${score.copyright}</rights>\n` : ''}  </identification>\n`
         : '';
-    const section = score.sections[0];
-    const timeSignature = section.attributes?.time ?? { beats: 4, beatType: 4 };
+    //const section = score.sections[0];
+    //const timeSignature = section.attributes?.time ?? { beats: 4, beatType: 4 };
 
+    /*
     if (mode === 'piano') {
         // Piano: one part with two staves (treble and bass)
         const trebleNotes = section.notes.filter(note => note.octave >= 4);
@@ -75,7 +76,9 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
         const partsXml = `<part id=\"P1\">\n${sectionToXml(pianoSection)}\n</part>`;
         return `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<score-partwise version=\"3.1\">\n  <work>\n    <work-title>${score.title || ''}</work-title>\n  </work>\n  ${identification}  <part-list>\n    ${partList}\n  </part-list>\n${partsXml}\n</score-partwise>`;
     }
+    */
 
+    /*
     // Single part for violin, viola, cello
     let clef;
     const partName = ' ';
@@ -104,8 +107,9 @@ export function scoreToXml(score: Score, mode: 'piano' | 'violin' | 'viola' | 'c
     };
     (singleSection as any).measures = measuresFilled;
     (singleSection as any).score = score;
-    
-    const partList = `<score-part id=\"P1\">\n      <part-name>${partName}</part-name>\n    </score-part>`;
-    const partsXml = `<part id=\"P1\">\n${sectionToXml(singleSection)}\n</part>`;
+    */
+
+    const partList = `<score-part id=\"P1\">\n      <part-name> </part-name>\n    </score-part>`;
+    const partsXml = `<part id=\"P1\">\n${sectionToXml(score.sections[0])}\n</part>`;
     return `<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<score-partwise version=\"3.1\">\n  <work>\n    <work-title>${score.title || ''}</work-title>\n  </work>\n  ${identification}  <part-list>\n    ${partList}\n  </part-list>\n${partsXml}\n</score-partwise>`;
 }

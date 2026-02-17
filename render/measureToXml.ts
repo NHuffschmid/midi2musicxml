@@ -1,42 +1,91 @@
-import { Section, RenderMeasure } from '../types';
+import { Section, RenderMeasure, MidiMeasure } from '../types';
 import { noteToXml } from './noteToXml';
+import { midiNoteToPitch } from '../utils/midiNoteToPitch';
+import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
-export function measureToXml(measure: RenderMeasure, section: Section): string {
+export function measureToXml(measure: MidiMeasure, section: Section): string {
     // Check if this is the first measure by looking at the temporary measures array
-    const measures = (section as any).measures as RenderMeasure[];
+    const measures = section.measures;
     const isFirstMeasure = measures && measures[0] === measure;
+    
+    // Get pulsesPerQuarterNote from score
+    const score = (section as any).score;
+    const pulsesPerQuarterNote = score?.pulsesPerQuarterNote ?? 480;
+    
+    // Get section properties or use defaults
+    const key = section.key ?? '0M';
+    const time = section.time ?? { beats: 4, beatType: 4 };
+    const tempo = section.tempo ?? 120;
     
     let attrXml = '';
     let directionXml = '';
-    let soundXml = '';
+    
     if (isFirstMeasure) {
-        const attr = section.attributes;
-        const isPiano = (section as any).isPiano;
-        attrXml = `<attributes>\n`;
-        const score = (section as any).score;
-        const pulsesPerQuarterNote = score?.pulsesPerQuarterNote || 12;
-        attrXml += `  <divisions>${pulsesPerQuarterNote}</divisions>\n`;
-        if (attr) {
-            if (attr.key !== undefined) attrXml += `  <key>\n    <fifths>${attr.key}</fifths>\n  </key>\n`;
-            if (attr.time) attrXml += `  <time>\n    <beats>${attr.time.beats}</beats>\n    <beat-type>${attr.time.beatType}</beat-type>\n  </time>\n`;
-            // For piano mode, define both clefs
-            if (isPiano) {
-                attrXml += `  <staves>2</staves>\n`;
-                attrXml += `  <clef number="1">\n    <sign>G</sign>\n    <line>2</line>\n  </clef>\n`;
-                attrXml += `  <clef number="2">\n    <sign>F</sign>\n    <line>4</line>\n  </clef>\n`;
-            } else if (attr.clef) {
-                attrXml += `  <clef>\n    <sign>${attr.clef.sign}</sign>\n    <line>${attr.clef.line}</line>\n  </clef>\n`;
-            }
-        }
-        attrXml += `</attributes>\n`;
-        if (section.direction) {
-            directionXml = `<direction placement=\"above\">\n  <direction-type>\n    <metronome>\n      <beat-unit>${section.direction.beatUnit || 'quarter'}</beat-unit>\n      <per-minute>${section.direction.tempo}</per-minute>\n    </metronome>\n  </direction-type>\n  <sound tempo=\"${section.direction.tempo}\"/>\n</direction>\n`;
-        }
-        soundXml = section.sound && !section.direction ? `<sound tempo=\"${section.sound.tempo}\"/>\n` : '';
+        // Parse key format "2M" or "2m" → fifths and mode
+        const keyMatch = key.match(/^([+-]?\d+)([Mm])$/);
+        const fifths = keyMatch ? parseInt(keyMatch[1]) : 0;
+        const mode = keyMatch && keyMatch[2] === 'm' ? 'minor' : 'major';
+        
+        // divisions = pulsesPerQuarterNote (duration units per quarter note)
+        const divisions = pulsesPerQuarterNote;
+        
+        attrXml = `  <attributes>
+    <divisions>${divisions}</divisions>
+    <key>
+      <fifths>${fifths}</fifths>
+      <mode>${mode}</mode>
+    </key>
+    <time>
+      <beats>${time.beats}</beats>
+      <beat-type>${time.beatType}</beat-type>
+    </time>
+    <clef>
+      <sign>G</sign>
+      <line>2</line>
+    </clef>
+  </attributes>`;
+
+        directionXml = `  <direction placement="above">
+    <direction-type>
+      <metronome>
+        <beat-unit>quarter</beat-unit>
+        <per-minute>${tempo}</per-minute>
+      </metronome>
+    </direction-type>
+  </direction>`;
     }
-    return `<measure>\n${attrXml}${directionXml}${soundXml}` +
-        measure.notes
-            .map(noteToXml)
-            .join('\n') +
-        '\n</measure>';
+    
+    // Convert all MIDI notes in this measure to MusicXML
+    const notesXml = measure.notes.map(midiNote => {
+        const { step, alter, octave } = midiNoteToPitch(midiNote.midi);
+        const { duration, type, dots } = midiTicksToXmlDurationType(
+            midiNote.durationTicks,
+            pulsesPerQuarterNote
+        );
+        
+        const alterXml = alter !== undefined && alter !== 0 
+            ? `    <alter>${alter}</alter>\n` 
+            : '';
+        const dotXml = dots > 0 ? '\n  ' + '<dot/>'.repeat(dots) : '';
+        
+        return `  <note>
+    <pitch>
+      <step>${step}</step>
+${alterXml}      <octave>${octave}</octave>
+    </pitch>
+    <duration>${duration}</duration>
+    <type>${type}</type>${dotXml}
+  </note>`;
+    }).join('\n');
+    
+    // Combine all parts
+    const measureContent = [attrXml, directionXml, notesXml]
+        .filter(s => s.length > 0)
+        .join('\n');
+    
+    const measureNumber = measures.indexOf(measure) + 1;
+    
+    return `<measure number="${measureNumber}">
+${measureContent}
+</measure>`;
 }

@@ -28,6 +28,7 @@ export type Measure = {
     notes: Note[];
 };
 
+/*
 export type Section = {
     notes: Note[];
     attributes?: {
@@ -42,6 +43,14 @@ export type Section = {
         tempo: number;
         beatUnit?: string;
     };
+};
+*/
+
+export type Section = {
+    measures: MidiMeasure[];
+    key?: string;
+    time?: { beats: number; beatType: number };
+    tempo?: number;
 };
 
 export type Score = {
