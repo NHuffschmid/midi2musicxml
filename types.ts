@@ -48,8 +48,8 @@ export type Section = {
 
 export type Section = {
     measures: MidiMeasure[];
-    key?: string;
-    time?: { beats: number; beatType: number };
+    key: string;
+    time: { beats: number; beatType: number };
     tempo?: number;
 };
 

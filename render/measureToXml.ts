@@ -7,24 +7,25 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
     // Check if this is the first measure by looking at the temporary measures array
     const measures = section.measures;
     const isFirstMeasure = measures && measures[0] === measure;
-    
-    // Get section properties or use defaults
-    const key = section.key ?? '0M';
-    const time = section.time ?? { beats: 4, beatType: 4 };
-    const tempo = section.tempo ?? 120;
-    
+
     let attrXml = '';
     let directionXml = '';
-    
+
     if (isFirstMeasure) {
+
+        // Get section properties
+        const key = section.key;
+        const time = section.time;
+        const tempo = section.tempo;
+
         // Parse key format "2M" or "2m" → fifths and mode
         const keyMatch = key.match(/^([+-]?\d+)([Mm])$/);
         const fifths = keyMatch ? parseInt(keyMatch[1]) : 0;
         const mode = keyMatch && keyMatch[2] === 'm' ? 'minor' : 'major';
-        
+
         // divisions = pulsesPerQuarterNote (duration units per quarter note)
         const divisions = pulsesPerQuarterNote;
-        
+
         attrXml = `  <attributes>
     <divisions>${divisions}</divisions>
     <key>
@@ -41,7 +42,8 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
     </clef>
   </attributes>`;
 
-        directionXml = `  <direction placement="above">
+        if (tempo !== undefined) {
+            directionXml = `  <direction placement="above">
     <direction-type>
       <metronome>
         <beat-unit>quarter</beat-unit>
@@ -49,8 +51,9 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
       </metronome>
     </direction-type>
   </direction>`;
+        }
     }
-    
+
     // Convert all MIDI notes in this measure to MusicXML
     const notesXml = measure.notes.map(midiNote => {
         const { step, alter, octave } = midiNoteToPitch(midiNote.midi);
@@ -58,12 +61,12 @@ export function measureToXml(measure: MidiMeasure, section: Section, pulsesPerQu
             midiNote.durationTicks,
             pulsesPerQuarterNote
         );
-        
-        const alterXml = alter !== undefined && alter !== 0 
-            ? `    <alter>${alter}</alter>\n` 
+
+        const alterXml = alter !== undefined && alter !== 0
+            ? `    <alter>${alter}</alter>\n`
             : '';
         const dotXml = dots > 0 ? '\n  ' + '<dot/>'.repeat(dots) : '';
-        
+
         return `  <note>
     <pitch>
       <step>${step}</step>
@@ -73,14 +76,14 @@ ${alterXml}      <octave>${octave}</octave>
     <type>${type}</type>${dotXml}
   </note>`;
     }).join('\n');
-    
+
     // Combine all parts
     const measureContent = [attrXml, directionXml, notesXml]
         .filter(s => s.length > 0)
         .join('\n');
-    
+
     const measureNumber = measures.indexOf(measure) + 1;
-    
+
     return `<measure number="${measureNumber}">
 ${measureContent}
 </measure>`;
