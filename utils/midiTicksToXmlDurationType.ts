@@ -40,12 +40,12 @@ export function midiTicksToXmlDurationType(
     const type = bestMatch.name.startsWith('dotted ')
       ? bestMatch.name.replace('dotted ', '')
       : bestMatch.name;
-    
+
     // Safety check: ensure dots never exceeds 1
     const safeDots = Math.min(bestMatch.dots, 1);
-    
+
     //console.log(`[midiTicksToXmlDurationType] durationTicks=${durationTicks}, matched type=${type}, dots=${safeDots}, duration=${pulsesPerQuarterNote * bestMatch.factor}`);
-    
+
     return {
       duration: pulsesPerQuarterNote * bestMatch.factor,
       type,
@@ -53,8 +53,8 @@ export function midiTicksToXmlDurationType(
     };
   }
   // Fallback: treat as quarter
-  console.warn(
-    `midiTicksToXmlDurationType: Unmatched durationTicks=${durationTicks}, pulsesPerQuarterNote=${pulsesPerQuarterNote}. Falling back to quarter note.`
-  );
+  //console.warn(
+  //  `midiTicksToXmlDurationType: Unmatched durationTicks=${durationTicks}, pulsesPerQuarterNote=${pulsesPerQuarterNote}. Falling back to quarter note.`
+  //);
   return { duration: pulsesPerQuarterNote, type: 'quarter', dots: 0 };
 }
