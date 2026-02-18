@@ -2,6 +2,19 @@ import { ClefType, Section, MidiMeasure } from '../types';
 import { midiNoteToPitch } from '../utils/midiNoteToPitch';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
+// Tolerance in ticks for detecting chords (notes played at nearly the same time)
+const CHORD_TICK_TOLERANCE = 20;
+// Tolerance for note duration differences to be considered same chord
+const CHORD_DURATION_TOLERANCE = 5;
+
+// Helper function to determine staff for a note
+function getStaffForNote(midiNote: number, clef: ClefType): number {
+    if (clef === 'piano') {
+        return midiNote >= 60 ? 1 : 2; // C4 and above → staff 1, below C4 → staff 2
+    }
+    return 1; // Single staff for other clefs
+}
+
 export function measureToXml(
     measure: MidiMeasure,
     section: Section,
@@ -86,19 +99,55 @@ ${clefXml}
         }
     }
 
+    // Sort notes by ticks to ensure proper ordering
+    const sortedNotes = [...measure.notes].sort((a, b) => a.ticks - b.ticks);
+
+    // Mark notes that are part of a chord
+    const noteChordInfo = sortedNotes.map((note, index) => {
+        let isChordNote = false;
+        const currentStaff = getStaffForNote(note.midi, clef);
+        
+        // Check if this note is part of a chord by comparing with previous notes
+        for (let i = index - 1; i >= 0; i--) {
+            const prevNote = sortedNotes[i];
+            const prevStaff = getStaffForNote(prevNote.midi, clef);
+            const tickDiff = Math.abs(note.ticks - prevNote.ticks);
+            const durationDiff = Math.abs(note.durationTicks - prevNote.durationTicks);
+            
+            // Notes are in a chord if they:
+            // - belong to the same staff
+            // - start within tolerance
+            // - have similar duration (within tolerance)
+            if (currentStaff === prevStaff && 
+                tickDiff <= CHORD_TICK_TOLERANCE && 
+                durationDiff <= CHORD_DURATION_TOLERANCE) {
+                isChordNote = true;
+                break;
+            }
+            
+            // Stop checking if we're too far from the current note's start time
+            if (note.ticks - prevNote.ticks > CHORD_TICK_TOLERANCE) {
+                break;
+            }
+        }
+        
+        return { note, isChordNote };
+    });
+
     // Convert all MIDI notes in this measure to MusicXML
-    const notesXml = measure.notes.map(midiNote => {
+    const notesXml = noteChordInfo.map(({ note: midiNote, isChordNote }) => {
         const { step, alter, octave } = midiNoteToPitch(midiNote.midi);
         const { duration, type, dots } = midiTicksToXmlDurationType(
             midiNote.durationTicks,
             pulsesPerQuarterNote
         );
 
+        const chordXml = isChordNote ? '\n    <chord/>' : '';
         const alterXml = alter !== undefined && alter !== 0
             ? `    <alter>${alter}</alter>\n`
             : '';
         const dotXml = dots > 0 ? '\n  ' + '<dot/>'.repeat(dots) : '';
-        
+
         // For piano mode, assign staff based on pitch (C4 = MIDI 60)
         let staffXml = '';
         if (clef === 'piano') {
@@ -106,7 +155,7 @@ ${clefXml}
             staffXml = `\n    <staff>${staffNum}</staff>`;
         }
 
-        return `  <note>
+        return `  <note>${chordXml}
     <pitch>
       <step>${step}</step>
 ${alterXml}      <octave>${octave}</octave>
