@@ -1,5 +1,4 @@
-import { ClefType, Section, RenderMeasure, MidiMeasure } from '../types';
-import { noteToXml } from './noteToXml';
+import { ClefType, Section, MidiMeasure } from '../types';
 import { midiNoteToPitch } from '../utils/midiNoteToPitch';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 

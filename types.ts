@@ -2,17 +2,6 @@
 export const ClefTypes = ['piano', 'violin', 'viola', 'cello'] as const;
 export type ClefType = typeof ClefTypes[number];
 
-// --- Render-specific Types ---
-export interface RenderNote extends Note {
-    isRest?: boolean;
-    isChord?: boolean;
-    staff?: number; // For piano mode: 1 = treble, 2 = bass
-}
-
-export interface RenderMeasure {
-    notes: RenderNote[];
-}
-
 // MusicXML Model Types
 
 export type Note = {
