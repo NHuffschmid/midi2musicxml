@@ -36,7 +36,10 @@ export function midiTicksToXmlDurationType(
       bestMatch = entry;
     }
   }
-  if (bestDiff < pulsesPerQuarterNote * 0.1) {
+  // Use relative tolerance: 20% of the expected duration (tolerant for human performance)
+  // Minimum of 10% of a quarter note to handle small variations
+  const tolerance = Math.max(pulsesPerQuarterNote * bestMatch.factor * 0.2, pulsesPerQuarterNote * 0.1);
+  if (bestDiff < tolerance) {
     const type = bestMatch.name.startsWith('dotted ')
       ? bestMatch.name.replace('dotted ', '')
       : bestMatch.name;

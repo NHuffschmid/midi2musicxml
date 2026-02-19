@@ -121,59 +121,103 @@ ${clefXml}
         };
     });
 
-    // Mark notes that are part of a chord
-    const noteChordInfo = notesWithMusicXmlProps.map((noteProps, index) => {
-        let isChordNote = false;
+    type NotePropsType = typeof notesWithMusicXmlProps[number];
+
+    // Group notes by start time (within tolerance)
+    const timeGroups: NotePropsType[][] = [];
+    let currentGroup: NotePropsType[] = [];
+    
+    for (let i = 0; i < notesWithMusicXmlProps.length; i++) {
+        const noteProps = notesWithMusicXmlProps[i];
         
-        // Check if this note is part of a chord by comparing with previous notes
-        for (let i = index - 1; i >= 0; i--) {
-            const prevNoteProps = notesWithMusicXmlProps[i];
-            const tickDiff = Math.abs(noteProps.midiNote.ticks - prevNoteProps.midiNote.ticks);
+        if (currentGroup.length === 0) {
+            currentGroup.push(noteProps);
+        } else {
+            const firstInGroup = currentGroup[0];
+            const tickDiff = Math.abs(noteProps.midiNote.ticks - firstInGroup.midiNote.ticks);
             
-            // Notes are in a chord if they:
-            // - belong to the same staff
-            // - start within tolerance
-            // - have the same MusicXML note type (quarter, eighth, etc.)
-            if (noteProps.staff === prevNoteProps.staff && 
-                tickDiff <= CHORD_TICK_TOLERANCE && 
-                noteProps.type === prevNoteProps.type &&
-                noteProps.dots === prevNoteProps.dots) {
-                isChordNote = true;
-                break;
-            }
-            
-            // Stop checking if we're too far from the current note's start time
-            if (noteProps.midiNote.ticks - prevNoteProps.midiNote.ticks > CHORD_TICK_TOLERANCE) {
-                break;
+            if (tickDiff <= CHORD_TICK_TOLERANCE) {
+                // Same time group
+                currentGroup.push(noteProps);
+            } else {
+                // New time group
+                timeGroups.push(currentGroup);
+                currentGroup = [noteProps];
             }
         }
+    }
+    if (currentGroup.length > 0) {
+        timeGroups.push(currentGroup);
+    }
+
+    // Process each time group
+    const xmlElements: string[] = [];
+    
+    for (const group of timeGroups) {
+        // Sort group: by duration (ascending), then staff, then pitch (descending)
+        // This ensures the longest duration note is written last
+        const sortedGroup = [...group].sort((a, b) => {
+            if (a.duration !== b.duration) return a.duration - b.duration; // Shortest first, longest last
+            if (a.staff !== b.staff) return a.staff - b.staff;
+            return b.midiNote.midi - a.midiNote.midi; // Higher notes first
+        });
         
-        return { ...noteProps, isChordNote };
-    });
-
-    // Convert all notes to MusicXML
-    const notesXml = noteChordInfo.map(({ step, alter, octave, duration, type, dots, staff, isChordNote }) => {
-        const chordXml = isChordNote ? '\n    <chord/>' : '';
-        const alterXml = alter !== undefined && alter !== 0
-            ? `    <alter>${alter}</alter>\n`
-            : '';
-        const dotXml = dots > 0 ? '\n  ' + '<dot/>'.repeat(dots) : '';
-
-        // For piano mode, assign staff based on pitch (C4 = MIDI 60)
-        let staffXml = '';
-        if (clef === 'piano') {
-            staffXml = `\n    <staff>${staff}</staff>`;
-        }
-
-        return `  <note>${chordXml}
+        // Mark notes that are part of a chord (same staff, same type/dots)
+        const notesWithChordInfo = sortedGroup.map((noteProps, index) => {
+            let isChordNote = false;
+            
+            // Check if this note is part of a chord with any previous note in the same group
+            for (let i = 0; i < index; i++) {
+                const prevNote = sortedGroup[i];
+                
+                if (noteProps.staff === prevNote.staff && 
+                    noteProps.type === prevNote.type &&
+                    noteProps.dots === prevNote.dots) {
+                    isChordNote = true;
+                    break;
+                }
+            }
+            
+            return { ...noteProps, isChordNote };
+        });
+        
+        // Write notes with backup between them
+        notesWithChordInfo.forEach((noteProps, index) => {
+            // Write the note
+            const { step, alter, octave, duration, type, dots, staff, isChordNote } = noteProps;
+            
+            const chordXml = isChordNote ? '\n    <chord/>' : '';
+            const alterXml = alter !== undefined && alter !== 0
+                ? `    <alter>${alter}</alter>\n`
+                : '';
+            const dotXml = dots > 0 ? '\n  ' + '<dot/>'.repeat(dots) : '';
+            
+            let staffXml = '';
+            if (clef === 'piano') {
+                staffXml = `\n    <staff>${staff}</staff>`;
+            }
+            
+            xmlElements.push(`  <note>${chordXml}
     <pitch>
       <step>${step}</step>
 ${alterXml}      <octave>${octave}</octave>
     </pitch>
     <duration>${duration}</duration>
     <type>${type}</type>${dotXml}${staffXml}
-  </note>`;
-    }).join('\n');
+  </note>`);
+            
+            // Add backup after this note to return to the start of the group
+            // But NOT if the next note is a chord (chord doesn't advance time)
+            // And NOT if this is the last note in the group
+            const nextNoteIsChord = index < notesWithChordInfo.length - 1 && notesWithChordInfo[index + 1].isChordNote;
+            
+            if (index < notesWithChordInfo.length - 1 && !nextNoteIsChord) {
+                xmlElements.push(`  <backup>\n    <duration>${duration}</duration>\n  </backup>`);
+            }
+        });
+    }
+    
+    const notesXml = xmlElements.join('\n');
 
     // Combine all parts
     const measureContent = [attrXml, directionXml, notesXml]
