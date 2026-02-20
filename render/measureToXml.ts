@@ -2,7 +2,6 @@ import { ClefType, MidiNote, Section, MidiMeasure } from '../types';
 import { renderAttributes } from './renderAttributes';
 import { renderDirection } from './renderDirection';
 import { renderTimeGroup } from './renderNotes';
-import { midiNoteToPitch } from '../utils/midiNoteToPitch';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
 // Tolerance in ticks for detecting chords (notes played at nearly the same time)
@@ -18,6 +17,15 @@ export interface NoteProperties {
     dots: number;
     isChordNote: boolean;
     staff: number;
+}
+
+function midiNoteToPitch(midiNote: number) {
+  const stepNames = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
+  const alterMap = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+  const step = stepNames[midiNote % 12];
+  const alter = alterMap[midiNote % 12];
+  const octave = Math.floor(midiNote / 12) - 1;
+  return { step, alter, octave };
 }
 
 /**
