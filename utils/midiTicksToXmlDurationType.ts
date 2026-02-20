@@ -1,5 +1,3 @@
-import { Note } from '../types';
-
 /**
  * Converts MIDI note duration (durationTicks) to MusicXML duration and type.
  * @param durationTicks

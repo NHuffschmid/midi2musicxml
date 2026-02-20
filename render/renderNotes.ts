@@ -1,11 +1,11 @@
 import { ClefType } from '../types';
-import { NoteWithChordInfo } from './measureToXml';
+import { NoteProperties } from './measureToXml';
 
 /**
  * Renders a single note to MusicXML.
  */
 export function renderNoteXml(
-    noteProps: NoteWithChordInfo,
+    noteProps: NoteProperties,
     clef: ClefType
 ): string {
     const { step, alter, octave, duration, type, dots, staff, isChordNote } = noteProps;
@@ -42,22 +42,22 @@ export function renderBackupXml(duration: number): string {
  * Renders all notes in a time group to MusicXML with proper backup elements.
  */
 export function renderTimeGroup(
-    notesWithChordInfo: NoteWithChordInfo[],
+    notes: NoteProperties[],
     clef: ClefType
 ): string[] {
     const xmlElements: string[] = [];
     
-    notesWithChordInfo.forEach((noteProps, index) => {
+    notes.forEach((noteProps, index) => {
         // Write the note
         xmlElements.push(renderNoteXml(noteProps, clef));
         
         // Add backup after this note to return to the start of the group
         // But NOT if the next note is a chord (chord doesn't advance time)
         // And NOT if this is the last note in the group
-        const nextNoteIsChord = index < notesWithChordInfo.length - 1 
-            && notesWithChordInfo[index + 1].isChordNote;
+        const nextNoteIsChord = index < notes.length - 1 
+            && notes[index + 1].isChordNote;
         
-        if (index < notesWithChordInfo.length - 1 && !nextNoteIsChord) {
+        if (index < notes.length - 1 && !nextNoteIsChord) {
             xmlElements.push(renderBackupXml(noteProps.duration));
         }
     });

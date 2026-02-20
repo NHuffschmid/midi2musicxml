@@ -16,11 +16,8 @@ export interface NoteProperties {
     duration: number;
     type: string;
     dots: number;
-    staff: number;
-}
-
-export interface NoteWithChordInfo extends NoteProperties {
     isChordNote: boolean;
+    staff: number;
 }
 
 /**
@@ -38,7 +35,7 @@ export function getStaffForNote(midiNote: number, clef: ClefType): number {
  * Notes are sorted by duration (ascending), then staff, then pitch (descending).
  * This ensures the longest duration note is written last.
  */
-function detectChordsInGroup(group: NoteProperties[]): NoteWithChordInfo[] {
+function detectChordsInGroup(group: NoteProperties[]): NoteProperties[] {
     // Sort group: by duration (ascending), then staff, then pitch (descending)
     const sortedGroup = [...group].sort((a, b) => {
         if (a.duration !== b.duration) return a.duration - b.duration; // Shortest first, longest last
@@ -90,6 +87,7 @@ function convertNotesToProperties(
             duration,
             type,
             dots,
+            isChordNote: false,
             staff
         };
     });

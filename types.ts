@@ -4,37 +4,20 @@ export type ClefType = typeof ClefTypes[number];
 
 // MusicXML Model Types
 
-export type Note = {
-    step: string;
-    alter?: number;
-    octave: number;
-    duration: number;
-    type: string;
-    dots?: number;
-    tick?: number;
-};
+export type MidiNote = { // according to tonejs/midi Note interface
+  midi: number;
+  name: string;
+  ticks: number;
+  time: number;
+  duration: number;
+  durationTicks: number;
+  velocity: number;
+  bars: number;
+}
 
-export type Measure = {
-    notes: Note[];
-};
-
-/*
-export type Section = {
-    notes: Note[];
-    attributes?: {
-        key?: string;
-        time?: { beats: number; beatType: number };
-        clef?: { sign: string; line: number };
-    };
-    sound?: {
-        tempo: number;
-    };
-    direction?: {
-        tempo: number;
-        beatUnit?: string;
-    };
-};
-*/
+export type MidiMeasure = { // according to tonejs/midi bars info
+  notes: MidiNote[];
+}
 
 export type Section = {
     measures: MidiMeasure[];
@@ -50,18 +33,3 @@ export type Score = {
     pulsesPerQuarterNote: number;
     sections: Section[];
 };
-
-export type MidiNote = { // according to tonejs/midi Note interface
-  midi: number;
-  name: string;
-  ticks: number;
-  time: number;
-  duration: number;
-  durationTicks: number;
-  velocity: number;
-  bars: number;
-}
-
-export type MidiMeasure = { // according to tonejs/midi bars info
-  notes: MidiNote[];
-}

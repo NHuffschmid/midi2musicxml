@@ -1,4 +1,4 @@
-import { MidiNote, MidiMeasure, Note, Measure, Section, Score, ClefType } from './types';
+import { MidiNote, MidiMeasure, Section, Score, ClefType } from './types';
 import { Midi } from '@tonejs/midi';
 import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
