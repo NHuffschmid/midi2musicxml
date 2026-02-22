@@ -8,9 +8,10 @@ export function renderNoteXml(
     noteProps: NoteProperties,
     clef: ClefType
 ): string {
-    const { step, alter, octave, duration, type, dots, staff, isChordNote } = noteProps;
+    const { step, alter, octave, duration, type, dots, staff, isChordNote, tempo } = noteProps;
     
     const chordXml = isChordNote ? '\n    <chord/>' : '';
+    const tempoXml = tempo !== undefined ? `\n    <x-tempo bpm="${tempo}"/>` : '';
     const alterXml = alter !== undefined && alter !== 0
         ? `    <alter>${alter}</alter>\n`
         : '';
@@ -21,7 +22,7 @@ export function renderNoteXml(
         staffXml = `\n    <staff>${staff}</staff>`;
     }
     
-    return `  <note>${chordXml}
+    return `  <note>${chordXml}${tempoXml}
     <pitch>
       <step>${step}</step>
 ${alterXml}      <octave>${octave}</octave>

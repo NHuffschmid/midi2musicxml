@@ -8,7 +8,9 @@ import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType'
 const CHORD_TICK_TOLERANCE = 20;
 
 export interface NoteProperties {
-    midiNote: MidiNote;
+    midi: number;
+    ticks: number;
+    tempo?: number;
     step: string;
     alter: number | undefined;
     octave: number;
@@ -48,7 +50,7 @@ function detectChordsInGroup(group: NoteProperties[]): NoteProperties[] {
     const sortedGroup = [...group].sort((a, b) => {
         if (a.duration !== b.duration) return a.duration - b.duration; // Shortest first, longest last
         if (a.staff !== b.staff) return a.staff - b.staff;
-        return b.midiNote.midi - a.midiNote.midi; // Higher notes first
+        return b.midi - a.midi; // Higher notes first
     });
     
     // Mark notes that are part of a chord (same staff, same type/dots)
@@ -88,7 +90,9 @@ function convertNotesToProperties(
         const staff = getStaffForNote(midiNote.midi, clef);
         
         return {
-            midiNote,
+            midi: midiNote.midi,
+            ticks: midiNote.ticks,
+            tempo: midiNote.tempo,
             step,
             alter,
             octave,
@@ -115,7 +119,7 @@ function groupNotesByTime(noteProps: NoteProperties[]): NoteProperties[][] {
             currentGroup.push(noteProperty);
         } else {
             const firstInGroup = currentGroup[0];
-            const tickDiff = Math.abs(noteProperty.midiNote.ticks - firstInGroup.midiNote.ticks);
+            const tickDiff = Math.abs(noteProperty.ticks - firstInGroup.ticks);
             
             if (tickDiff <= CHORD_TICK_TOLERANCE) {
                 // Same time group

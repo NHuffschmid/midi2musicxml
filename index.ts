@@ -7,6 +7,7 @@ import { scoreToXml } from './render/scoreToXml';
 import { collectMidiNotes } from './utils/collectMidiNotes';
 import { collectMidiMeasures } from './utils/collectMidiMeasures';
 import { setBeams } from './utils/beamUtils';
+import { handleTempo } from './utils/handleTempo';
 import { analyzeSections } from './analysis/analyzeSections';
 
 export interface Midi2MusicXMLOptions {
@@ -44,8 +45,9 @@ export function midi2MusicXML(
   // Render as MusicXML
   let musicXml = scoreToXml(score, options.clef ?? 'piano');
 
-  // optimize and beautify MusicXML document
+  // optimize, beautify and finalize MusicXML document
   musicXml = setBeams(musicXml);
+  musicXml = handleTempo(musicXml);
 
   return musicXml;
 }

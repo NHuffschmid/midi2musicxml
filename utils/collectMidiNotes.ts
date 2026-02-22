@@ -9,7 +9,6 @@ import { MidiNote } from '../types';
 export function collectMidiNotes(midi: Midi): MidiNote[] {
   // Gather all notes from all tracks
   const ppq = midi.header.ppq || 480;
-  const tempos = midi.header.tempos.slice().sort((a, b) => a.ticks - b.ticks);
   const tracks = midi.tracks.map(track => track.notes);
 
   const allMidiNotes: MidiNote[] = tracks.flat().map(note => ({
@@ -23,6 +22,22 @@ export function collectMidiNotes(midi: Midi): MidiNote[] {
       bars: note.bars
   }));
   allMidiNotes.sort((a, b) => (a.ticks ?? 0) - (b.ticks ?? 0));
+
+  // Extract tempo changes from MIDI header and sort by ticks
+  const tempos = midi.header.tempos.slice().sort((a, b) => a.ticks - b.ticks);
+
+  // Assign tempo to each note based on its tick position
+  allMidiNotes.forEach(note => {
+    let currentTempo: number | undefined;
+    for (const tempo of tempos) {
+      if (tempo.ticks <= note.ticks) {
+        currentTempo = tempo.bpm;
+      } else {
+        break;
+      }
+    }
+    note.tempo = currentTempo;
+  });
 
   return allMidiNotes;
 }
