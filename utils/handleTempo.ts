@@ -21,44 +21,52 @@ export function handleTempo(musicXml: string): string {
     });
     
     // Detect significant tempo drops followed by increase or end
-    //const TEMPO_DROP_THRESHOLD = 0.7; // 30% or more drop
-    const TEMPO_DROP_THRESHOLD = 0.9;
+    const TEMPO_DROP_THRESHOLD = 0.7;
+    const TEMPO_RECOVERY_THRESHOLD = 1.2; // Minimum recovery ratio to add fermata
+    const N_NOTES_FOR_AVERAGE = 30; // Number of notes to average for tempo comparison
     
     for (let i = 0; i < tempoData.length - 1; i++) {
-        const current = tempoData[i];
         const next = tempoData[i + 1];
         
-        // Check if tempo drops significantly
-        const tempoRatio = next.bpm / current.bpm;
+        // Calculate average tempo of the last N notes (up to current position)
+        const startIndex = Math.max(0, i - N_NOTES_FOR_AVERAGE + 1);
+        const notesForAverage = tempoData.slice(startIndex, i + 1);
+        const averageBpm = notesForAverage.reduce((sum, data) => sum + data.bpm, 0) / notesForAverage.length;
+        
+        // Check if tempo drops significantly compared to average
+        const tempoRatio = next.bpm / averageBpm;
         if (tempoRatio < TEMPO_DROP_THRESHOLD) {
             // Check if tempo recovers afterwards or this is near the end
             let shouldAddFermata = false;
+            let targetNote: Element = next.note;
             
             if (i === tempoData.length - 2) {
-                // Near end of piece
+                // Near end of piece - add fermata to last note
                 shouldAddFermata = true;
+                targetNote = next.note;
             } else {
                 const following = tempoData[i + 2];
                 const recoveryRatio = following.bpm / next.bpm;
-                if (recoveryRatio > 1.2) {
-                    // Tempo increases again by 20%+
+                if (recoveryRatio > TEMPO_RECOVERY_THRESHOLD) {
+                    // Tempo increases again by 20%+ - add fermata to note AFTER the slow note
                     shouldAddFermata = true;
+                    targetNote = following.note;
                 }
             }
             
             if (shouldAddFermata) {
-                // Add fermata to the note with slower tempo
-                const notationsElements = next.note.getElementsByTagName('notations');
+                // Add fermata to target note
+                const notationsElements = targetNote.getElementsByTagName('notations');
                 let notationsEl = notationsElements.length > 0 ? notationsElements[0] : null;
                 if (!notationsEl) {
                     notationsEl = xmlDoc.createElement('notations');
                     // Insert before staff element if it exists
-                    const staffElements = next.note.getElementsByTagName('staff');
+                    const staffElements = targetNote.getElementsByTagName('staff');
                     const staffEl = staffElements.length > 0 ? staffElements[0] : null;
                     if (staffEl) {
-                        next.note.insertBefore(notationsEl, staffEl);
+                        targetNote.insertBefore(notationsEl, staffEl);
                     } else {
-                        next.note.appendChild(notationsEl);
+                        targetNote.appendChild(notationsEl);
                     }
                 }
                 
@@ -66,7 +74,7 @@ export function handleTempo(musicXml: string): string {
                 fermataEl.setAttribute('type', 'upright');
                 notationsEl.appendChild(fermataEl);
                 
-                console.log(`[handleTempo] Added fermata: tempo drop from ${current.bpm} to ${next.bpm} BPM`);
+                console.log(`[handleTempo] Added fermata: tempo drop from ${averageBpm.toFixed(2)} (avg) to ${next.bpm} BPM`);
             }
         }
     }
