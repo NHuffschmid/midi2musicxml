@@ -40,6 +40,18 @@ export function renderBackupXml(duration: number): string {
 }
 
 /**
+ * Renders a direction element with tempo text for debugging.
+ */
+export function renderTempoDirection(tempo: number): string {
+    return `  <direction placement="above">
+    <direction-type>
+      <words font-size="8pt" color="#888888">${tempo.toFixed(1)}</words>
+    </direction-type>
+    <sound tempo="${tempo}"/>
+  </direction>`;
+}
+
+/**
  * Renders all notes in a time group to MusicXML with proper backup elements.
  */
 export function renderTimeGroup(
@@ -49,6 +61,13 @@ export function renderTimeGroup(
     const xmlElements: string[] = [];
     
     notes.forEach((noteProps, index) => {
+        // Add tempo direction for debugging (only on non-chord notes)
+        /*
+        if (noteProps.tempo !== undefined && !noteProps.isChordNote) {
+            xmlElements.push(renderTempoDirection(noteProps.tempo));
+        }
+        */
+       
         // Write the note
         xmlElements.push(renderNoteXml(noteProps, clef));
         
