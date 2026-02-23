@@ -9,6 +9,7 @@ import { collectMidiMeasures } from './utils/collectMidiMeasures';
 import { setBeams } from './utils/beamUtils';
 import { handleTempo } from './utils/handleTempo';
 import { analyzeSections } from './analysis/analyzeSections';
+import xmlFormatter from 'xml-formatter';
 
 export interface Midi2MusicXMLOptions {
   title?: string;
@@ -48,6 +49,12 @@ export function midi2MusicXML(
   // optimize, beautify and finalize MusicXML document
   musicXml = setBeams(musicXml);
   musicXml = handleTempo(musicXml);
+
+  musicXml = xmlFormatter(musicXml, {
+    indentation: '  ',
+    collapseContent: true,
+    lineSeparator: '\n'
+  });
 
   return musicXml;
 }
