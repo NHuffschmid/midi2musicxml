@@ -9,12 +9,13 @@ import { collectMidiMeasures } from './utils/collectMidiMeasures';
 import { setBeams } from './utils/beamUtils';
 import { handleTempo } from './utils/handleTempo';
 import { analyzeSections } from './analysis/analyzeSections';
-import xmlFormatter from 'xml-formatter';
 
 export interface Midi2MusicXMLOptions {
   title?: string;
   composer?: string;
   clef?: ClefType;
+  /** Format the output XML. Requires the optional `xml-formatter` package. Defaults to `true` if the package is available, `false` otherwise. */
+  format?: boolean;
 }
 
 export function midi2MusicXML(
@@ -50,11 +51,22 @@ export function midi2MusicXML(
   musicXml = setBeams(musicXml);
   musicXml = handleTempo(musicXml);
 
-  musicXml = xmlFormatter(musicXml, {
-    indentation: '  ',
-    collapseContent: true,
-    lineSeparator: '\n'
-  });
+  if (options.format !== false) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const xmlFormatter = require('xml-formatter');
+      // Support both CJS (function) and ESM-interop (module.default) formats
+      const formatter: (xml: string, opts: object) => string =
+        typeof xmlFormatter === 'function' ? xmlFormatter : xmlFormatter.default;
+      musicXml = formatter(musicXml, {
+        indentation: '  ',
+        collapseContent: true,
+        lineSeparator: '\n'
+      });
+    } catch {
+      // xml-formatter is optional; skip formatting if not installed
+    }
+  }
 
   return musicXml;
 }
