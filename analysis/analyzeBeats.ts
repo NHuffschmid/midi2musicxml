@@ -1,14 +1,11 @@
 import { Midi } from '@tonejs/midi';
-import { MidiMeasure, MidiNote } from '../types';
 
 /**
  * Analyzes the beats of a MIDI file and returns the time signature as an object.
  * @param midi The MIDI file to analyze
- * @param midiNotes Array of MIDI notes
- * @param midiMeasures Array of MIDI measures
  * @returns The time signature as an object with beats and beatType properties
  */
-export function analyzeBeats(midi: Midi, midiNotes: MidiNote[], midiMeasures: MidiMeasure[]): { beats: number; beatType: number } {
+export function analyzeBeats(midi: Midi): { beats: number; beatType: number } {
   
   // Default to 4/4 if no time signature is found
   let time = { beats: 4, beatType: 4 };

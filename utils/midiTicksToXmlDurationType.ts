@@ -1,5 +1,3 @@
-import { Note } from '../types';
-
 /**
  * Converts MIDI note duration (durationTicks) to MusicXML duration and type.
  * @param durationTicks
@@ -36,16 +34,19 @@ export function midiTicksToXmlDurationType(
       bestMatch = entry;
     }
   }
-  if (bestDiff < pulsesPerQuarterNote * 0.1) {
+  // Use relative tolerance: 20% of the expected duration (tolerant for human performance)
+  // Minimum of 10% of a quarter note to handle small variations
+  const tolerance = Math.max(pulsesPerQuarterNote * bestMatch.factor * 0.2, pulsesPerQuarterNote * 0.1);
+  if (bestDiff < tolerance) {
     const type = bestMatch.name.startsWith('dotted ')
       ? bestMatch.name.replace('dotted ', '')
       : bestMatch.name;
-    
+
     // Safety check: ensure dots never exceeds 1
     const safeDots = Math.min(bestMatch.dots, 1);
-    
-    console.log(`[midiTicksToXmlDurationType] durationTicks=${durationTicks}, matched type=${type}, dots=${safeDots}, duration=${pulsesPerQuarterNote * bestMatch.factor}`);
-    
+
+    //console.log(`[midiTicksToXmlDurationType] durationTicks=${durationTicks}, matched type=${type}, dots=${safeDots}, duration=${pulsesPerQuarterNote * bestMatch.factor}`);
+
     return {
       duration: pulsesPerQuarterNote * bestMatch.factor,
       type,
@@ -53,8 +54,8 @@ export function midiTicksToXmlDurationType(
     };
   }
   // Fallback: treat as quarter
-  console.warn(
-    `midiTicksToXmlDurationType: Unmatched durationTicks=${durationTicks}, pulsesPerQuarterNote=${pulsesPerQuarterNote}. Falling back to quarter note.`
-  );
+  //console.warn(
+  //  `midiTicksToXmlDurationType: Unmatched durationTicks=${durationTicks}, pulsesPerQuarterNote=${pulsesPerQuarterNote}. Falling back to quarter note.`
+  //);
   return { duration: pulsesPerQuarterNote, type: 'quarter', dots: 0 };
 }

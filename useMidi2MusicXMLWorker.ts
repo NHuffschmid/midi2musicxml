@@ -8,7 +8,7 @@ export function useMidi2MusicXMLWorker() {
 
   const convert = useCallback(async (midi: Midi, options: Midi2MusicXMLOptions = {}): Promise<string> => {
     return new Promise((resolve, reject) => {
-      console.log('[Midi2MusicXMLWorker] Starting midi2MusicXML conversion in Web Worker');
+      //console.log('[Midi2MusicXMLWorker] Starting midi2MusicXML conversion in Web Worker');
 
       // Terminate existing worker if any
       if (workerRef.current) {
@@ -25,7 +25,7 @@ export function useMidi2MusicXMLWorker() {
       // Listen for response
       worker.onmessage = (event: MessageEvent) => {
         const { success, xml, error } = event.data;
-        console.log('[Midi2MusicXMLWorker] Received response from worker, success:', success);
+        //console.log('[Midi2MusicXMLWorker] Received response from worker, success:', success);
 
         if (success) {
           resolve(xml);

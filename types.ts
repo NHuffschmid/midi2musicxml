@@ -1,56 +1,8 @@
 // Supported rendering clef types
-export type ClefType = 'piano' | 'violin' | 'viola' | 'cello';
-
-// --- Render-specific Types ---
-export interface RenderNote extends Note {
-    isRest?: boolean;
-    isChord?: boolean;
-    staff?: number; // For piano mode: 1 = treble, 2 = bass
-}
-
-export interface RenderMeasure {
-    notes: RenderNote[];
-}
+export const ClefTypes = ['piano', 'violin', 'viola', 'cello'] as const;
+export type ClefType = typeof ClefTypes[number];
 
 // MusicXML Model Types
-
-export type Note = {
-    step: string;
-    alter?: number;
-    octave: number;
-    duration: number;
-    type: string;
-    dots?: number;
-    tick?: number;
-};
-
-export type Measure = {
-    notes: Note[];
-};
-
-export type Section = {
-    notes: Note[];
-    attributes?: {
-        key?: string;
-        time?: { beats: number; beatType: number };
-        clef?: { sign: string; line: number };
-    };
-    sound?: {
-        tempo: number;
-    };
-    direction?: {
-        tempo: number;
-        beatUnit?: string;
-    };
-};
-
-export type Score = {
-    title?: string;
-    composer?: string;
-    copyright?: string;
-    pulsesPerQuarterNote: number;
-    sections: Section[];
-};
 
 export type MidiNote = { // according to tonejs/midi Note interface
   midi: number;
@@ -61,8 +13,24 @@ export type MidiNote = { // according to tonejs/midi Note interface
   durationTicks: number;
   velocity: number;
   bars: number;
+  tempo?: number;
 }
 
 export type MidiMeasure = { // according to tonejs/midi bars info
   notes: MidiNote[];
 }
+
+export type Section = {
+    measures: MidiMeasure[];
+    key: string;
+    time: { beats: number; beatType: number };
+    tempo?: number;
+};
+
+export type Score = {
+    title?: string;
+    composer?: string;
+    copyright?: string;
+    pulsesPerQuarterNote: number;
+    sections: Section[];
+};
