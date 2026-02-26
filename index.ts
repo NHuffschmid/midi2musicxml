@@ -10,6 +10,12 @@ import { musicalToNotation } from './transforms/musicalToNotation';
 import { notationToLayout, InstrumentType } from './transforms/notationToLayout';
 import { layoutToMusicXML } from './transforms/layoutToMusicXML';
 import { musicXMLToString } from './transforms/musicXMLToString';
+import { 
+  dumpMusicalModel, prettyPrintMusicalModel,
+  dumpNotationModel, prettyPrintNotationModel,
+  dumpLayoutModel, prettyPrintLayoutModel,
+  dumpMusicXMLModel, prettyPrintMusicXMLModel
+} from './debug';
 import xmlFormatter from 'xml-formatter';
 import { MidiNote, MidiMeasure, Section } from './types';
 
@@ -57,22 +63,30 @@ export function midi2MusicXML(
     copyright,
     pulsesPerQuarterNote
   });
+  const musicalDump = dumpMusicalModel(musicalScore);
+  const musicalPrettyPrint = prettyPrintMusicalModel(musicalScore);
 
   // Stage 3: MusicalModel → NotationModel
   const notationScore = musicalToNotation(musicalScore, {
     pulsesPerQuarterNote
   });
+  const notationDump = dumpNotationModel(notationScore);
+  const notationPrettyPrint = prettyPrintNotationModel(notationScore);
 
   // Stage 4: NotationModel → LayoutModel
   const instrument: InstrumentType = options.clef ?? 'piano';
   const layoutScore = notationToLayout(notationScore, {
     instrument
   });
+  const layoutDump = dumpLayoutModel(layoutScore);
+  const layoutPrettyPrint = prettyPrintLayoutModel(layoutScore);
 
   // Stage 5: LayoutModel → MusicXMLModel
   const musicXMLDoc = layoutToMusicXML(layoutScore, {
     divisions: pulsesPerQuarterNote
   });
+  const musicXMLDump = dumpMusicXMLModel(musicXMLDoc);
+  const musicXMLPrettyPrint = prettyPrintMusicXMLModel(musicXMLDoc);
 
   // Stage 6: MusicXMLModel → XML String
   let musicXml = musicXMLToString(musicXMLDoc);

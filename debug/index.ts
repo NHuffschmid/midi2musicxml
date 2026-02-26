@@ -3,7 +3,6 @@
  */
 
 export * from './dumpMusicalModel';
-// Future: Add dump functions for other models
-// export * from './dumpNotationModel';
-// export * from './dumpLayoutModel';
-// export * from './dumpMusicXMLModel';
+export * from './dumpNotationModel';
+export * from './dumpLayoutModel';
+export * from './dumpMusicXMLModel';
