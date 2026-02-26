@@ -40,13 +40,15 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
             duration: note.duration,
             voice: note.voice,
             type: note.type,
-            stem: note.stem,
+            dot: note.dot,
+            accidental: note.accidental?.type,
+            stem: note.stem?.direction,
             staff: note.staff,
             chord: note.chord ? true : undefined,
+            beam: note.beam?.map(b => ({ number: b.number, value: b.value })),
             notations: note.notations ? {
-              ties: note.notations.tie?.map(t => t.type),
-              slurs: note.notations.slur?.map(s => ({ type: s.type, number: s.number })),
-              articulations: note.notations.articulations
+              tied: note.notations.tied?.map(t => t.type),
+              tuplet: note.notations.tuplet?.map(t => ({ type: t.type, number: t.number }))
             } : undefined
           })),
           backups: m.backup?.map(b => ({ duration: b.duration }))
