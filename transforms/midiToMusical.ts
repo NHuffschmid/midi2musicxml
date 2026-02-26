@@ -1,0 +1,249 @@
+/**
+ * Transform: MIDI → MusicalModel
+ * 
+ * Converts MIDI data (MidiNote[], MidiMeasure[]) to MusicalModel.
+ * 
+ * Key responsibilities:
+ * - Voice separation (highest notes → Voice 1)
+ * - Rest insertion (fill gaps in each voice)
+ * - Chord grouping (simultaneous notes)
+ * - Extract time signature, key signature, tempo
+ */
+
+import { Midi } from '@tonejs/midi';
+import { MidiNote, MidiMeasure, Section } from '../types';
+import { 
+  MusicalScore, 
+  MusicalPart, 
+  MusicalMeasure, 
+  MusicalVoice, 
+  MusicalNote, 
+  MusicalRest,
+  MusicalEvent,
+  TimeSignature,
+  KeySignature,
+  MusicalMetadata
+} from '../models/MusicalModel';
+
+const CHORD_TICK_TOLERANCE = 20; // Notes within this tick range are considered simultaneous
+
+export interface MidiToMusicalOptions {
+  title?: string;
+  composer?: string;
+  copyright?: string;
+  pulsesPerQuarterNote: number;
+}
+
+/**
+ * Main transform function: MIDI → MusicalModel
+ */
+export function midiToMusical(
+  sections: Section[],
+  options: MidiToMusicalOptions
+): MusicalScore {
+  
+  const parts: MusicalPart[] = [
+    {
+      id: 'P1',
+      name: '',
+      measures: sectionsToMeasures(sections, options.pulsesPerQuarterNote)
+    }
+  ];
+
+  return {
+    title: options.title,
+    composer: options.composer,
+    copyright: options.copyright,
+    parts
+  };
+}
+
+/**
+ * Convert sections to musical measures with voice separation
+ */
+function sectionsToMeasures(
+  sections: Section[],
+  ppq: number
+): MusicalMeasure[] {
+  const musicalMeasures: MusicalMeasure[] = [];
+
+  for (const section of sections) {
+    const sectionMeasures = section.measures.map((midiMeasure, index) => 
+      convertMeasure(midiMeasure, section, index, ppq)
+    );
+    musicalMeasures.push(...sectionMeasures);
+  }
+
+  return musicalMeasures;
+}
+
+/**
+ * Convert a single MIDI measure to a Musical measure
+ */
+function convertMeasure(
+  midiMeasure: MidiMeasure,
+  section: Section,
+  measureIndex: number,
+  ppq: number
+): MusicalMeasure {
+  
+  const isFirstMeasure = measureIndex === 0;
+  const measureNumber = measureIndex + 1;
+
+  // Separate notes into voices
+  const voices = separateVoices(midiMeasure.notes, ppq, section.time);
+
+  return {
+    number: measureNumber,
+    timeSignature: isFirstMeasure ? section.time : undefined,
+    keySignature: isFirstMeasure ? parseKeySignature(section.key) : undefined,
+    tempo: isFirstMeasure && section.tempo ? section.tempo : undefined,
+    voices
+  };
+}
+
+/**
+ * Separate notes into voices based on overlapping
+ * Highest notes go to Voice 1
+ */
+function separateVoices(
+  midiNotes: MidiNote[],
+  ppq: number,
+  timeSignature: TimeSignature
+): MusicalVoice[] {
+  
+  if (midiNotes.length === 0) {
+    // Return a single voice with a full measure rest
+    const measureDurationTicks = (timeSignature.beats * ppq * 4) / timeSignature.beatType;
+    return [{
+      voiceNumber: 1,
+      events: [{
+        type: 'rest',
+        startTick: 0,
+        durationTicks: measureDurationTicks
+      }]
+    }];
+  }
+
+  // Sort notes by: 1. start time, 2. pitch (descending - highest first)
+  const sortedNotes = [...midiNotes].sort((a, b) => {
+    if (a.ticks !== b.ticks) return a.ticks - b.ticks;
+    return b.midi - a.midi; // Higher pitches first
+  });
+
+  // Track voices (each voice tracks its last occupied tick)
+  const voices: Array<{voiceNumber: number; events: MusicalEvent[]; lastTick: number; startTick: number}> = [];
+
+  // Get measure boundaries
+  const measureDurationTicks = (timeSignature.beats * ppq * 4) / timeSignature.beatType;
+  const measureStartTick = midiNotes.length > 0 ? Math.floor(midiNotes[0].ticks / measureDurationTicks) * measureDurationTicks : 0;
+  const measureEndTick = measureStartTick + measureDurationTicks;
+
+  for (const midiNote of sortedNotes) {
+    const noteStart = midiNote.ticks;
+    const noteEnd = midiNote.ticks + midiNote.durationTicks;
+
+    // Find a voice that is free at this note's start time (with tolerance for chords)
+    let targetVoice = voices.find(v => v.lastTick <= noteStart + CHORD_TICK_TOLERANCE);
+
+    if (!targetVoice) {
+      // Create new voice
+      targetVoice = {
+        voiceNumber: voices.length + 1,
+        events: [],
+        lastTick: measureStartTick,
+        startTick: measureStartTick
+      };
+      voices.push(targetVoice);
+    }
+
+    // Determine if this is a chord note (starts within tolerance of last note in voice)
+    const lastEvent = targetVoice.events[targetVoice.events.length - 1];
+    const isChordNote = lastEvent !== undefined && 
+                        lastEvent.type === 'note' && 
+                        Math.abs(noteStart - lastEvent.startTick) <= CHORD_TICK_TOLERANCE;
+
+    // Add rest if there's a gap (and not within chord tolerance)
+    if (!isChordNote && targetVoice.lastTick < noteStart - CHORD_TICK_TOLERANCE) {
+      targetVoice.events.push({
+        type: 'rest',
+        startTick: targetVoice.lastTick,
+        durationTicks: noteStart - targetVoice.lastTick
+      });
+    }
+
+    // Add the note
+    const musicalNote: MusicalNote = {
+      type: 'note',
+      midi: midiNote.midi,
+      startTick: noteStart,
+      durationTicks: midiNote.durationTicks,
+      velocity: midiNote.velocity,
+      isChordNote
+    };
+    targetVoice.events.push(musicalNote);
+
+    // Update last tick (only if this note extends further than chord base)
+    if (!isChordNote || noteEnd > targetVoice.lastTick) {
+      targetVoice.lastTick = Math.max(targetVoice.lastTick, noteEnd);
+    }
+  }
+
+  // Fill remaining time in each voice with rests (to end of measure)
+  for (const voice of voices) {
+    if (voice.lastTick < measureEndTick) {
+      voice.events.push({
+        type: 'rest',
+        startTick: voice.lastTick,
+        durationTicks: measureEndTick - voice.lastTick
+      });
+    }
+  }
+
+  // Convert to MusicalVoice format
+  return voices.map(v => ({
+    voiceNumber: v.voiceNumber,
+    events: v.events
+  }));
+}
+
+/**
+ * Parse key signature from string (e.g., "C", "Am", "F#", "Bb")
+ */
+function parseKeySignature(key: string): KeySignature {
+  // Simplified key parsing - extend as needed
+  const keyMap: Record<string, {fifths: number; mode: 'major' | 'minor'}> = {
+    'C': { fifths: 0, mode: 'major' },
+    'Am': { fifths: 0, mode: 'minor' },
+    'G': { fifths: 1, mode: 'major' },
+    'Em': { fifths: 1, mode: 'minor' },
+    'D': { fifths: 2, mode: 'major' },
+    'Bm': { fifths: 2, mode: 'minor' },
+    'A': { fifths: 3, mode: 'major' },
+    'F#m': { fifths: 3, mode: 'minor' },
+    'E': { fifths: 4, mode: 'major' },
+    'C#m': { fifths: 4, mode: 'minor' },
+    'B': { fifths: 5, mode: 'major' },
+    'G#m': { fifths: 5, mode: 'minor' },
+    'F#': { fifths: 6, mode: 'major' },
+    'D#m': { fifths: 6, mode: 'minor' },
+    'C#': { fifths: 7, mode: 'major' },
+    'A#m': { fifths: 7, mode: 'minor' },
+    'F': { fifths: -1, mode: 'major' },
+    'Dm': { fifths: -1, mode: 'minor' },
+    'Bb': { fifths: -2, mode: 'major' },
+    'Gm': { fifths: -2, mode: 'minor' },
+    'Eb': { fifths: -3, mode: 'major' },
+    'Cm': { fifths: -3, mode: 'minor' },
+    'Ab': { fifths: -4, mode: 'major' },
+    'Fm': { fifths: -4, mode: 'minor' },
+    'Db': { fifths: -5, mode: 'major' },
+    'Bbm': { fifths: -5, mode: 'minor' },
+    'Gb': { fifths: -6, mode: 'major' },
+    'Ebm': { fifths: -6, mode: 'minor' },
+    'Cb': { fifths: -7, mode: 'major' },
+    'Abm': { fifths: -7, mode: 'minor' },
+  };
+
+  return keyMap[key] || { fifths: 0, mode: 'major' };
+}

@@ -1,55 +1,83 @@
-import { MidiNote, MidiMeasure, Section, Score, ClefType } from './types';
 import { Midi } from '@tonejs/midi';
 import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
-import { scoreToXml } from './render/scoreToXml';
 import { collectMidiNotes } from './utils/collectMidiNotes';
 import { collectMidiMeasures } from './utils/collectMidiMeasures';
-import { setBeams } from './utils/beamUtils';
-import { handleTempo } from './utils/handleTempo';
 import { analyzeSections } from './analysis/analyzeSections';
+import { midiToMusical } from './transforms/midiToMusical';
+import { musicalToNotation } from './transforms/musicalToNotation';
+import { notationToLayout, InstrumentType } from './transforms/notationToLayout';
+import { layoutToMusicXML } from './transforms/layoutToMusicXML';
+import { musicXMLToString } from './transforms/musicXMLToString';
 import xmlFormatter from 'xml-formatter';
+import { MidiNote, MidiMeasure, Section } from './types';
+
+// Re-export types for backwards compatibility
+export type { ClefType } from './types';
 
 export interface Midi2MusicXMLOptions {
   title?: string;
   composer?: string;
-  clef?: ClefType;
+  clef?: 'piano' | 'violin' | 'viola' | 'cello';
 }
 
+/**
+ * Convert MIDI to MusicXML using 5-stage pipeline architecture:
+ * 
+ * Stage 1: MIDI (tonejs) - Raw MIDI data
+ * Stage 2: MusicalModel - Musical semantics (voices, notes, rests)
+ * Stage 3: NotationModel - Notation decisions (beaming, stems, accidentals)
+ * Stage 4: LayoutModel - Layout decisions (staves, systems)
+ * Stage 5: MusicXMLModel - MusicXML DOM structure
+ * Stage 6: XML String - Serialized output
+ */
 export function midi2MusicXML(
   midi: Midi,
   options: Midi2MusicXMLOptions = {}
 ): string {
 
+  // Extract metadata
   const scoreTitle = options.title ?? analyzeTitle(midi);
   const scoreComposer = options.composer ?? analyzeComposer(midi);
   const copyright = analyzeCopyright(midi);
-
-  // Collect and sort all notes from all tracks
   const pulsesPerQuarterNote = midi.header.ppq || 480;
+
+  // Stage 1: Collect MIDI notes and measures
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
   if (midiNotes.length === 0) return '';
 
   const midiMeasures: MidiMeasure[] = collectMidiMeasures(midiNotes);
-
   const sections: Section[] = analyzeSections(midi, midiMeasures);
 
-  const score: Score = {
+  // Stage 2: MIDI → MusicalModel
+  const musicalScore = midiToMusical(sections, {
     title: scoreTitle,
     composer: scoreComposer,
     copyright,
-    pulsesPerQuarterNote,
-    sections: [sections[0]],
-  };
+    pulsesPerQuarterNote
+  });
 
-  // Render as MusicXML
-  let musicXml = scoreToXml(score, options.clef ?? 'piano');
+  // Stage 3: MusicalModel → NotationModel
+  const notationScore = musicalToNotation(musicalScore, {
+    pulsesPerQuarterNote
+  });
 
-  // optimize, beautify and finalize MusicXML document
-  musicXml = setBeams(musicXml);
-  musicXml = handleTempo(musicXml);
+  // Stage 4: NotationModel → LayoutModel
+  const instrument: InstrumentType = options.clef ?? 'piano';
+  const layoutScore = notationToLayout(notationScore, {
+    instrument
+  });
 
+  // Stage 5: LayoutModel → MusicXMLModel
+  const musicXMLDoc = layoutToMusicXML(layoutScore, {
+    divisions: pulsesPerQuarterNote
+  });
+
+  // Stage 6: MusicXMLModel → XML String
+  let musicXml = musicXMLToString(musicXMLDoc);
+
+  // Format and beautify XML
   musicXml = xmlFormatter(musicXml, {
     indentation: '  ',
     collapseContent: true,

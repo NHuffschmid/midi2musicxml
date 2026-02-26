@@ -1,10 +1,16 @@
-// Supported rendering clef types
+/**
+ * Legacy types for backward compatibility and MIDI processing
+ * 
+ * These types are used in the early stages of the pipeline
+ * before conversion to the new model architecture.
+ */
+
+// Instrument types (for backward compatibility)
 export const ClefTypes = ['piano', 'violin', 'viola', 'cello'] as const;
 export type ClefType = typeof ClefTypes[number];
 
-// MusicXML Model Types
-
-export type MidiNote = { // according to tonejs/midi Note interface
+// MIDI data types (from tonejs/midi)
+export type MidiNote = {
   midi: number;
   name: string;
   ticks: number;
@@ -16,21 +22,13 @@ export type MidiNote = { // according to tonejs/midi Note interface
   tempo?: number;
 }
 
-export type MidiMeasure = { // according to tonejs/midi bars info
+export type MidiMeasure = {
   notes: MidiNote[];
 }
 
 export type Section = {
-    measures: MidiMeasure[];
-    key: string;
-    time: { beats: number; beatType: number };
-    tempo?: number;
-};
-
-export type Score = {
-    title?: string;
-    composer?: string;
-    copyright?: string;
-    pulsesPerQuarterNote: number;
-    sections: Section[];
+  measures: MidiMeasure[];
+  key: string;
+  time: { beats: number; beatType: number };
+  tempo?: number;
 };
