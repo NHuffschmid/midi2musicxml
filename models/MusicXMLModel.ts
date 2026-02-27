@@ -114,7 +114,6 @@ export interface NoteElement {
   voice?: number;
   type: string; // quarter, eighth, etc.
   dot?: number; // Number of dots
-  accidental?: Accidental;
   stem?: Stem;
   beam?: Beam[];
   notations?: Notations;
@@ -129,10 +128,6 @@ export interface MusicXMLPitch {
 
 export interface Rest {
   measure?: boolean; // Full measure rest
-}
-
-export interface Accidental {
-  type: string; // sharp, flat, natural, etc.
 }
 
 export interface Stem {

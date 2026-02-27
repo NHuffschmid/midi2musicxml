@@ -41,7 +41,6 @@ XML String
 - **Responsibilities**:
   - Convert MIDI ticks to concrete note values (quarter, eighth, etc.)
   - Convert MIDI numbers to pitches (step, alter, octave)
-  - Determine accidental display
   - Determine stem directions (Voice 1: up, Voice 2+: down)
   - Beaming information (future)
   - Tuplets recognition (future)
@@ -189,7 +188,6 @@ expect(xml).toContain('<note>');
 - [ ] Pedal events support
 
 ### Medium Term
-- [ ] Accidental state tracking (avoid redundant accidentals)
 - [ ] Dynamics from MIDI velocity
 - [ ] Articulation marks (staccato, legato)
 - [ ] Slurs and phrasing

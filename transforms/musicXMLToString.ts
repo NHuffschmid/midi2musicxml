@@ -289,11 +289,6 @@ function serializeNote(note: NoteElement): string {
     }
   }
 
-  // Accidental
-  if (note.accidental) {
-    xml += `        <accidental>${note.accidental.type}</accidental>\n`;
-  }
-
   // Stem
   if (note.stem) {
     xml += `        <stem>${note.stem.direction}</stem>\n`;

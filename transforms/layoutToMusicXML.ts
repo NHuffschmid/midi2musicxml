@@ -263,7 +263,6 @@ function convertNote(
     voice: voiceNumber,
     type: note.duration.type,
     dot: note.duration.dots > 0 ? note.duration.dots : undefined,
-    accidental: note.accidental?.show ? { type: note.accidental.type } : undefined,
     stem: note.stem ? { direction: note.stem } : undefined,
     staff: totalStaves > 1 ? staffNumber : undefined
   };

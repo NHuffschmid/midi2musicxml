@@ -3,7 +3,6 @@
  * 
  * Adds notation-specific decisions:
  * - Concrete note values (quarter, eighth, etc.)
- * - Accidentals (natural, sharp, flat)
  * - Beaming information
  * - Stem directions
  * - Tuplets (triplets, etc.)
@@ -56,7 +55,6 @@ export interface NotationNote {
   chord?: {}; // Empty object if this is a chord note (not the first)
   tie?: TieInfo;
   tuplet?: TupletInfo;
-  accidental?: AccidentalDisplay; // Whether to show accidental
 }
 
 export interface NotationRest {
@@ -91,9 +89,4 @@ export interface TupletInfo {
   actualNotes: number;   // e.g., 3 for triplet
   normalNotes: number;   // e.g., 2 for triplet
   bracket?: boolean;     // Show bracket or not
-}
-
-export interface AccidentalDisplay {
-  show: boolean;
-  type: 'sharp' | 'flat' | 'natural' | 'double-sharp' | 'double-flat';
 }
