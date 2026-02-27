@@ -96,7 +96,7 @@ function convertMeasure(
   return {
     number: measureNumber,
     timeSignature: isFirstMeasure ? section.time : undefined,
-    keySignature: isFirstMeasure ? parseKeySignature(section.key) : undefined,
+    keySignature: isFirstMeasure ? section.key : undefined,
     tempo: isFirstMeasure && section.tempo ? section.tempo : undefined,
     voices
   };
@@ -205,45 +205,4 @@ function separateVoices(
     voiceNumber: v.voiceNumber,
     events: v.events
   }));
-}
-
-/**
- * Parse key signature from string (e.g., "C", "Am", "F#", "Bb")
- */
-function parseKeySignature(key: string): KeySignature {
-  // Simplified key parsing - extend as needed
-  const keyMap: Record<string, {fifths: number; mode: 'major' | 'minor'}> = {
-    'C': { fifths: 0, mode: 'major' },
-    'Am': { fifths: 0, mode: 'minor' },
-    'G': { fifths: 1, mode: 'major' },
-    'Em': { fifths: 1, mode: 'minor' },
-    'D': { fifths: 2, mode: 'major' },
-    'Bm': { fifths: 2, mode: 'minor' },
-    'A': { fifths: 3, mode: 'major' },
-    'F#m': { fifths: 3, mode: 'minor' },
-    'E': { fifths: 4, mode: 'major' },
-    'C#m': { fifths: 4, mode: 'minor' },
-    'B': { fifths: 5, mode: 'major' },
-    'G#m': { fifths: 5, mode: 'minor' },
-    'F#': { fifths: 6, mode: 'major' },
-    'D#m': { fifths: 6, mode: 'minor' },
-    'C#': { fifths: 7, mode: 'major' },
-    'A#m': { fifths: 7, mode: 'minor' },
-    'F': { fifths: -1, mode: 'major' },
-    'Dm': { fifths: -1, mode: 'minor' },
-    'Bb': { fifths: -2, mode: 'major' },
-    'Gm': { fifths: -2, mode: 'minor' },
-    'Eb': { fifths: -3, mode: 'major' },
-    'Cm': { fifths: -3, mode: 'minor' },
-    'Ab': { fifths: -4, mode: 'major' },
-    'Fm': { fifths: -4, mode: 'minor' },
-    'Db': { fifths: -5, mode: 'major' },
-    'Bbm': { fifths: -5, mode: 'minor' },
-    'Gb': { fifths: -6, mode: 'major' },
-    'Ebm': { fifths: -6, mode: 'minor' },
-    'Cb': { fifths: -7, mode: 'major' },
-    'Abm': { fifths: -7, mode: 'minor' },
-  };
-
-  return keyMap[key] || { fifths: 0, mode: 'major' };
 }

@@ -23,7 +23,7 @@ export function createSimpleSection(notes: Partial<MidiNote>[] = []): Section {
 
   return {
     measures: [{ notes: fullNotes }],
-    key: 'C',
+    key: { fifths: 0, mode: 'major' }, // C major
     time: { beats: 4, beatType: 4 },
     tempo: 120
   };

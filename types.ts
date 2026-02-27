@@ -26,9 +26,14 @@ export type MidiMeasure = {
   notes: MidiNote[];
 }
 
+export type KeySignature = {
+  fifths: number;  // -7 to +7 (flat to sharp)
+  mode: 'major' | 'minor';
+};
+
 export type Section = {
   measures: MidiMeasure[];
-  key: string;
+  key: KeySignature;
   time: { beats: number; beatType: number };
   tempo?: number;
 };
