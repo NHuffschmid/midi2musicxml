@@ -195,14 +195,28 @@ function splitVoiceByPitch(voice: NotationVoice): {
   const staff1Events: LayoutEvent[] = [];
   const staff2Events: LayoutEvent[] = [];
 
+  // Determine dominant staff for this voice based on first/last notes
+  let dominantStaff = 1;
+  const notes = voice.events.filter(e => e.type === 'note') as NotationNote[];
+  if (notes.length > 0) {
+    const avgMidi = notes.reduce((sum, n) => sum + pitchToMidi(n.pitch), 0) / notes.length;
+    dominantStaff = avgMidi >= 60 ? 1 : 2;
+  }
+
   for (const event of voice.events) {
     if (event.type === 'rest') {
-      // Rests go to both staves (or we could assign based on context)
-      // For simplicity, assign to staff 1
-      staff1Events.push({
+      // Assign rest to the same staff as the notes in this voice
+      const targetStaff = dominantStaff;
+      const layoutRest: LayoutRest = {
         ...event,
-        staffNumber: 1
-      });
+        staffNumber: targetStaff
+      };
+      
+      if (targetStaff === 1) {
+        staff1Events.push(layoutRest);
+      } else {
+        staff2Events.push(layoutRest);
+      }
     } else {
       // Note: assign based on pitch
       const midi = pitchToMidi(event.pitch);
