@@ -3,21 +3,21 @@ import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { collectMidiNotes } from './utils/collectMidiNotes';
-import { collectMidiMeasures } from './utils/collectMidiMeasures';
-import { analyzeSections } from './analysis/analyzeSections';
-import { midiToMusical } from './transforms/midiToMusical';
+import { midiToTemporal } from './transforms/midiToTemporal';
+import { temporalToMusical } from './transforms/temporalToMusical';
 import { musicalToNotation } from './transforms/musicalToNotation';
 import { notationToLayout, InstrumentType } from './transforms/notationToLayout';
 import { layoutToMusicXML } from './transforms/layoutToMusicXML';
 import { musicXMLToString } from './transforms/musicXMLToString';
 import { 
+  dumpTemporalModel, prettyPrintTemporalModel,
   dumpMusicalModel, prettyPrintMusicalModel,
   dumpNotationModel, prettyPrintNotationModel,
   dumpLayoutModel, prettyPrintLayoutModel,
   dumpMusicXMLModel, prettyPrintMusicXMLModel
 } from './debug';
 import xmlFormatter from 'xml-formatter';
-import { MidiNote, MidiMeasure, Section } from './types';
+import { MidiNote } from './types';
 
 // Re-export types for backwards compatibility
 export type { ClefType } from './types';
@@ -29,14 +29,15 @@ export interface Midi2MusicXMLOptions {
 }
 
 /**
- * Convert MIDI to MusicXML using 5-stage pipeline architecture:
+ * Convert MIDI to MusicXML using 7-stage pipeline architecture:
  * 
  * Stage 1: MIDI (tonejs) - Raw MIDI data
- * Stage 2: MusicalModel - Musical semantics (voices, notes, rests)
- * Stage 3: NotationModel - Notation decisions (beaming, stems)
- * Stage 4: LayoutModel - Layout decisions (staves, systems)
- * Stage 5: MusicXMLModel - MusicXML DOM structure
- * Stage 6: XML String - Serialized output
+ * Stage 2: TemporalModel - Time-based structure (sections, measures)
+ * Stage 3: MusicalModel - Musical semantics (voices, notes, rests)
+ * Stage 4: NotationModel - Notation decisions (beaming, stems)
+ * Stage 5: LayoutModel - Layout decisions (staves, systems)
+ * Stage 6: MusicXMLModel - MusicXML DOM structure
+ * Stage 7: XML String - Serialized output
  */
 export function midi2MusicXML(
   midi: Midi,
@@ -49,31 +50,32 @@ export function midi2MusicXML(
   const copyright = analyzeCopyright(midi);
   const pulsesPerQuarterNote = midi.header.ppq || 480;
 
-  // Stage 1: Collect MIDI notes and measures
+  // Stage 1: Collect MIDI notes
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
   if (midiNotes.length === 0) return '';
 
-  const midiMeasures: MidiMeasure[] = collectMidiMeasures(midiNotes, midi);
-  const sections: Section[] = analyzeSections(midi, midiMeasures);
-
-  // Stage 2: MIDI → MusicalModel
-  const musicalScore = midiToMusical(sections, {
+  // Stage 2: MIDI → TemporalModel
+  const temporalScore = midiToTemporal(midiNotes, midi, {
     title: scoreTitle,
     composer: scoreComposer,
-    copyright,
-    pulsesPerQuarterNote
+    copyright
   });
+  const temporalDump = dumpTemporalModel(temporalScore);
+  const temporalPrettyPrint = prettyPrintTemporalModel(temporalScore);
+
+  // Stage 3: TemporalModel → MusicalModel
+  const musicalScore = temporalToMusical(temporalScore);
   const musicalDump = dumpMusicalModel(musicalScore);
   const musicalPrettyPrint = prettyPrintMusicalModel(musicalScore);
 
-  // Stage 3: MusicalModel → NotationModel
+  // Stage 4: MusicalModel → NotationModel
   const notationScore = musicalToNotation(musicalScore, {
     pulsesPerQuarterNote
   });
   const notationDump = dumpNotationModel(notationScore);
   const notationPrettyPrint = prettyPrintNotationModel(notationScore);
 
-  // Stage 4: NotationModel → LayoutModel
+  // Stage 5: NotationModel → LayoutModel
   const instrument: InstrumentType = options.clef ?? 'piano';
   const layoutScore = notationToLayout(notationScore, {
     instrument
@@ -81,14 +83,14 @@ export function midi2MusicXML(
   const layoutDump = dumpLayoutModel(layoutScore);
   const layoutPrettyPrint = prettyPrintLayoutModel(layoutScore);
 
-  // Stage 5: LayoutModel → MusicXMLModel
+  // Stage 6: LayoutModel → MusicXMLModel
   const musicXMLDoc = layoutToMusicXML(layoutScore, {
     divisions: pulsesPerQuarterNote
   });
   const musicXMLDump = dumpMusicXMLModel(musicXMLDoc);
   const musicXMLPrettyPrint = prettyPrintMusicXMLModel(musicXMLDoc);
 
-  // Stage 6: MusicXMLModel → XML String
+  // Stage 7: MusicXMLModel → XML String
   let musicXml = musicXMLToString(musicXMLDoc);
 
   // Format and beautify XML

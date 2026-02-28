@@ -2,12 +2,15 @@
  * Pipeline Models - All stages of the MIDI to MusicXML conversion
  * 
  * Stage 1: MIDI (tonejs/midi) - Raw MIDI data
- * Stage 2: MusicalModel - Musical semantics (voices, notes, rests)
- * Stage 3: NotationModel - Notation decisions (beaming, stems)
- * Stage 4: LayoutModel - Layout decisions (staves, systems)
- * Stage 5: MusicXMLModel - MusicXML DOM structure
+ * Stage 2: TemporalModel - Time-based structure (sections, measures)
+ * Stage 3: MusicalModel - Musical semantics (voices, notes, rests)
+ * Stage 4: NotationModel - Notation decisions (beaming, stems)
+ * Stage 5: LayoutModel - Layout decisions (staves, systems)
+ * Stage 6: MusicXMLModel - MusicXML DOM structure
+ * Stage 7: XML String - Serialized output
  */
 
+export * from './TemporalModel';
 export * from './MusicalModel';
 export * from './NotationModel';
 export * from './LayoutModel';
