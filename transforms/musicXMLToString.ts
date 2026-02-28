@@ -61,7 +61,8 @@ function serializeScorePartwise(score: ScorePartwise): string {
   xml += `  <part-list>\n`;
   for (const scorePart of score.partList.scoreParts) {
     xml += `    <score-part id="${scorePart.id}">\n`;
-    xml += `      <part-name>${escapeXml(scorePart.partName)}</part-name>\n`;
+    const preserveSpace = scorePart.partName.trim() === '' && scorePart.partName.length > 0;
+    xml += `      <part-name${preserveSpace ? ' xml:space="preserve"' : ''}>${escapeXml(scorePart.partName)}</part-name>\n`;
     xml += `    </score-part>\n`;
   }
   xml += `  </part-list>\n`;

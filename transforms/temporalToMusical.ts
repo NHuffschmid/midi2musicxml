@@ -41,7 +41,7 @@ export function temporalToMusical(
   const parts: MusicalPart[] = [
     {
       id: 'P1',
-      name: '',
+      name: ' ',
       measures: sectionsToMeasures(temporalScore.sections, temporalScore.ppq)
     }
   ];
