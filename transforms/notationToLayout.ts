@@ -168,6 +168,7 @@ function splitMeasureForPiano(notationMeasure: NotationMeasure): {
       timeSignature: notationMeasure.timeSignature,
       keySignature: notationMeasure.keySignature,
       tempo: notationMeasure.tempo,
+      sectionStart: notationMeasure.sectionStart,
       voices: staff1Voices,
       pedalEvents: notationMeasure.pedalEvents
     },
@@ -176,6 +177,7 @@ function splitMeasureForPiano(notationMeasure: NotationMeasure): {
       timeSignature: notationMeasure.timeSignature,
       keySignature: notationMeasure.keySignature,
       tempo: notationMeasure.tempo,
+      sectionStart: notationMeasure.sectionStart,
       voices: staff2Voices,
       pedalEvents: notationMeasure.pedalEvents
     }
@@ -235,6 +237,7 @@ function convertMeasureForSingleStaff(
     timeSignature: notationMeasure.timeSignature,
     keySignature: notationMeasure.keySignature,
     tempo: notationMeasure.tempo,
+    sectionStart: notationMeasure.sectionStart,
     voices: notationMeasure.voices.map(voice => ({
       voiceNumber: voice.voiceNumber,
       staffNumber,

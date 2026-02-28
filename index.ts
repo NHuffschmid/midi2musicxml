@@ -53,7 +53,7 @@ export function midi2MusicXML(
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
   if (midiNotes.length === 0) return '';
 
-  const midiMeasures: MidiMeasure[] = collectMidiMeasures(midiNotes);
+  const midiMeasures: MidiMeasure[] = collectMidiMeasures(midiNotes, midi);
   const sections: Section[] = analyzeSections(midi, midiMeasures);
 
   // Stage 2: MIDI → MusicalModel

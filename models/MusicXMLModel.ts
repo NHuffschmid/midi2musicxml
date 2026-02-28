@@ -49,9 +49,11 @@ export interface Part {
 
 export interface Measure {
   number: number;
+  print?: Print;
   attributes?: Attributes;
   direction?: Direction[];
   notes: NoteElement[];
+  barline?: Barline[];
   backup?: Backup[];
 }
 
@@ -157,4 +159,14 @@ export interface Tuplet {
 
 export interface Backup {
   duration: number;
+}
+
+export interface Print {
+  newSystem?: boolean;
+  newPage?: boolean;
+}
+
+export interface Barline {
+  location: 'left' | 'right' | 'middle';
+  barStyle?: 'light-light' | 'light-heavy' | 'heavy-light' | 'heavy-heavy' | 'regular' | 'dotted' | 'dashed' | 'heavy' | 'none';
 }

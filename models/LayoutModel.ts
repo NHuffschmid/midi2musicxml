@@ -38,6 +38,7 @@ export interface LayoutMeasure {
   tempo?: number;
   voices: LayoutVoice[];
   pedalEvents?: PedalEvent[];
+  sectionStart?: boolean;
 }
 
 export interface LayoutVoice {

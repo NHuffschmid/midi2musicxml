@@ -14,7 +14,9 @@ import {
   Direction,
   Clef,
   Key,
-  Time
+  Time,
+  Print,
+  Barline
 } from '../models/MusicXMLModel';
 
 /**
@@ -92,6 +94,20 @@ function serializePart(part: Part): string {
 function serializeMeasure(measure: Measure): string {
   let xml = `    <measure number="${measure.number}">\n`;
 
+  // Print
+  if (measure.print) {
+    xml += serializePrint(measure.print);
+  }
+
+  // Barline (left side)
+  if (measure.barline) {
+    for (const barline of measure.barline) {
+      if (barline.location === 'left') {
+        xml += serializeBarline(barline);
+      }
+    }
+  }
+
   // Attributes
   if (measure.attributes) {
     xml += serializeAttributes(measure.attributes);
@@ -115,6 +131,15 @@ function serializeMeasure(measure: Measure): string {
       xml += `      <backup>\n`;
       xml += `        <duration>${backup.duration}</duration>\n`;
       xml += `      </backup>\n`;
+    }
+  }
+
+  // Barline (right/middle side)
+  if (measure.barline) {
+    for (const barline of measure.barline) {
+      if (barline.location !== 'left') {
+        xml += serializeBarline(barline);
+      }
     }
   }
 
@@ -337,6 +362,33 @@ function serializeNote(note: NoteElement): string {
   }
 
   xml += `      </note>\n`;
+  return xml;
+}
+
+/**
+ * Serialize print element
+ */
+function serializePrint(print: any): string {
+  let xml = `      <print`;
+  if (print.newSystem) {
+    xml += ` new-system="yes"`;
+  }
+  if (print.newPage) {
+    xml += ` new-page="yes"`;
+  }
+  xml += `/>\n`;
+  return xml;
+}
+
+/**
+ * Serialize barline element
+ */
+function serializeBarline(barline: any): string {
+  let xml = `      <barline location="${barline.location}">\n`;
+  if (barline.barStyle) {
+    xml += `        <bar-style>${barline.barStyle}</bar-style>\n`;
+  }
+  xml += `      </barline>\n`;
   return xml;
 }
 

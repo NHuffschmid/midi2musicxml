@@ -66,12 +66,35 @@ function sectionsToMeasures(
   ppq: number
 ): MusicalMeasure[] {
   const musicalMeasures: MusicalMeasure[] = [];
+  let globalMeasureNumber = 1;
+  let previousKeySignature: KeySignature | undefined;
 
-  for (const section of sections) {
-    const sectionMeasures = section.measures.map((midiMeasure, index) => 
-      convertMeasure(midiMeasure, section, index, ppq)
-    );
-    musicalMeasures.push(...sectionMeasures);
+  for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
+    const section = sections[sectionIndex];
+    const isFirstSection = sectionIndex === 0;
+    const keySignatureChanged = !previousKeySignature || 
+      previousKeySignature.fifths !== section.key.fifths || 
+      previousKeySignature.mode !== section.key.mode;
+    
+    for (let measureIndex = 0; measureIndex < section.measures.length; measureIndex++) {
+      const midiMeasure = section.measures[measureIndex];
+      const isFirstMeasureInSection = measureIndex === 0;
+      
+      const musicalMeasure = convertMeasure(
+        midiMeasure, 
+        section, 
+        measureIndex, 
+        globalMeasureNumber,
+        isFirstMeasureInSection && !isFirstSection, // Mark section start (except for the very first section)
+        isFirstMeasureInSection && keySignatureChanged, // Show key signature if changed
+        ppq
+      );
+      
+      musicalMeasures.push(musicalMeasure);
+      globalMeasureNumber++;
+    }
+    
+    previousKeySignature = section.key;
   }
 
   return musicalMeasures;
@@ -84,20 +107,23 @@ function convertMeasure(
   midiMeasure: MidiMeasure,
   section: Section,
   measureIndex: number,
+  globalMeasureNumber: number,
+  isSectionStart: boolean,
+  showKeySignature: boolean,
   ppq: number
 ): MusicalMeasure {
   
   const isFirstMeasure = measureIndex === 0;
-  const measureNumber = measureIndex + 1;
 
   // Separate notes into voices
   const voices = separateVoices(midiMeasure.notes, ppq, section.time);
 
   return {
-    number: measureNumber,
+    number: globalMeasureNumber,
     timeSignature: isFirstMeasure ? section.time : undefined,
-    keySignature: isFirstMeasure ? section.key : undefined,
+    keySignature: showKeySignature ? section.key : undefined,
     tempo: isFirstMeasure && section.tempo ? section.tempo : undefined,
+    sectionStart: isSectionStart || undefined,
     voices
   };
 }

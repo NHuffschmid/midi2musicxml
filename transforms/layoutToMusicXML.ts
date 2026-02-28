@@ -128,25 +128,30 @@ function mergeMeasure(
   
   const firstMeasure = staffMeasures[0];
   
-  // Attributes (only in first measure or when changed)
+  // Attributes (in first measure or when key/time signature changes)
+  const hasKeySignature = firstMeasure.keySignature !== undefined;
+  const hasTimeSignature = firstMeasure.timeSignature !== undefined;
+  const hasTempo = firstMeasure.tempo !== undefined;
+  const needsAttributes = isFirstMeasure || hasKeySignature || hasTimeSignature;
+  
   let attributes: Attributes | undefined;
-  if (isFirstMeasure) {
+  if (needsAttributes) {
     attributes = {
-      divisions,
-      key: firstMeasure.keySignature ? {
-        fifths: firstMeasure.keySignature.fifths,
-        mode: firstMeasure.keySignature.mode
+      divisions: isFirstMeasure ? divisions : undefined,
+      key: hasKeySignature ? {
+        fifths: firstMeasure.keySignature!.fifths,
+        mode: firstMeasure.keySignature!.mode
       } : undefined,
-      time: firstMeasure.timeSignature ? {
-        beats: firstMeasure.timeSignature.beats,
-        beatType: firstMeasure.timeSignature.beatType
+      time: hasTimeSignature ? {
+        beats: firstMeasure.timeSignature!.beats,
+        beatType: firstMeasure.timeSignature!.beatType
       } : undefined,
-      staves: staffMeasures.length > 1 ? staffMeasures.length : undefined,
-      clef: clefs.map(c => ({
+      staves: isFirstMeasure && staffMeasures.length > 1 ? staffMeasures.length : undefined,
+      clef: isFirstMeasure ? clefs.map(c => ({
         sign: c.sign,
         line: getClefLine(c.sign),
         number: staffMeasures.length > 1 ? c.staffNumber : undefined
-      }))
+      })) : undefined
     };
   }
 
@@ -192,11 +197,19 @@ function mergeMeasure(
     backup = backup.slice(0, -1);
   }
 
+  // Add print element for section start
+  const print = firstMeasure.sectionStart ? { newSystem: true } : undefined;
+
+  // Add barline for section separation (double barline at left side)
+  const barline = firstMeasure.sectionStart ? [{ location: 'left' as const, barStyle: 'light-light' as const }] : undefined;
+
   return {
     number: measureNumber,
+    print,
     attributes,
     direction: direction.length > 0 ? direction : undefined,
     notes,
+    barline,
     backup: backup.length > 0 ? backup : undefined
   };
 }

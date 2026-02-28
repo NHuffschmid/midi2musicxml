@@ -30,6 +30,7 @@ export interface MusicalMeasure {
   tempo?: number;                 // Only set if it changes (BPM)
   voices: MusicalVoice[];
   pedalEvents?: PedalEvent[];     // Sustain pedal events
+  sectionStart?: boolean;         // True if this measure starts a new section
 }
 
 export interface MusicalVoice {

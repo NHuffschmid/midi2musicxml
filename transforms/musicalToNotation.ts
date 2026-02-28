@@ -73,6 +73,7 @@ function convertMeasure(
     timeSignature: musicalMeasure.timeSignature,
     keySignature: musicalMeasure.keySignature,
     tempo: musicalMeasure.tempo,
+    sectionStart: musicalMeasure.sectionStart,
     voices: musicalMeasure.voices.map(voice => 
       convertVoice(voice, ppq, musicalMeasure.voices.length)
     ),

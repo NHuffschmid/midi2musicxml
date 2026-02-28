@@ -37,6 +37,7 @@ export interface NotationMeasure {
   tempo?: number;
   voices: NotationVoice[];
   pedalEvents?: PedalEvent[];
+  sectionStart?: boolean;
 }
 
 export interface NotationVoice {
