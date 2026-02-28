@@ -144,6 +144,7 @@ export interface Beam {
 export interface Notations {
   tied?: Tied[];
   tuplet?: Tuplet[];
+  articulations?: Articulation[];
 }
 
 export interface Tied {
@@ -155,6 +156,10 @@ export interface Tuplet {
   bracket?: boolean;
   number?: number;
   showNumber?: string; // actual, both, none
+}
+
+export interface Articulation {
+  type: 'staccato' | 'tenuto' | 'accent' | 'staccatissimo';
 }
 
 export interface Backup {

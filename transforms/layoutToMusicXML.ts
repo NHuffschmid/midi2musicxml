@@ -265,6 +265,11 @@ function convertNote(
   
   const duration = durationInDivisions(note.duration, divisions);
 
+  // Build notations if needed (articulations, etc.)
+  const notations = note.articulation ? {
+    articulations: [{ type: note.articulation }]
+  } : undefined;
+
   return {
     chord: note.chord !== undefined,
     pitch: {
@@ -277,6 +282,7 @@ function convertNote(
     type: note.duration.type,
     dot: note.duration.dots > 0 ? note.duration.dots : undefined,
     stem: note.stem ? { direction: note.stem } : undefined,
+    notations,
     staff: totalStaves > 1 ? staffNumber : undefined
   };
 }

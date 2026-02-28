@@ -354,6 +354,14 @@ function serializeNote(note: NoteElement): string {
       }
     }
 
+    if (note.notations.articulations) {
+      xml += `          <articulations>\n`;
+      for (const articulation of note.notations.articulations) {
+        xml += `            <${articulation.type}/>\n`;
+      }
+      xml += `          </articulations>\n`;
+    }
+
     xml += `        </notations>\n`;
   }
 

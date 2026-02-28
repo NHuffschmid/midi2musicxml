@@ -55,6 +55,7 @@ Stage 7: XML String
   - Convert MIDI ticks to concrete note values (quarter, eighth, etc.)
   - Convert MIDI numbers to pitches (step, alter, octave)
   - Determine stem directions (Voice 1: up, Voice 2+: down)
+  - Optimize notation: recognize articulation patterns (e.g., short note + rest → longer note with staccato)
   - Beaming information (future)
   - Tuplets recognition (future)
 - **File**: `models/NotationModel.ts`

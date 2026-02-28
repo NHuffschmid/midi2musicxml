@@ -94,9 +94,12 @@ function convertVoice(
     convertEvent(event, ppq, musicalVoice.voiceNumber, totalVoices)
   );
 
+  // Optimize notation: convert short note + rest patterns to longer note with staccato
+  const optimizedEvents = optimizeArticulation(events, ppq);
+
   return {
     voiceNumber: musicalVoice.voiceNumber,
-    events
+    events: optimizedEvents
   };
 }
 
@@ -169,6 +172,83 @@ function midiToPitch(midi: number): Pitch {
   const octave = Math.floor(midi / 12) - 1;
   
   return { step, alter, octave };
+}
+
+/**
+ * Optimize notation by recognizing articulation patterns.
+ * Example: dotted 32nd note + 64th rest → 16th note with staccato
+ */
+function optimizeArticulation(events: NotationEvent[], ppq: number): NotationEvent[] {
+  const result: NotationEvent[] = [];
+  
+  for (let i = 0; i < events.length; i++) {
+    const current = events[i];
+    const next = events[i + 1];
+    
+    // Check pattern: Note followed by Rest
+    if (current.type === 'note' && next && next.type === 'rest') {
+      const noteDurationTicks = durationToTicks(current.duration, ppq);
+      const restDurationTicks = durationToTicks(next.duration, ppq);
+      const totalTicks = noteDurationTicks + restDurationTicks;
+      
+      // Try to find a simpler duration for the combined length
+      const { type: combinedType, dots: combinedDots } = midiTicksToXmlDurationType(totalTicks, ppq);
+      const combinedDuration: NoteDuration = {
+        type: combinedType as NoteDuration['type'],
+        dots: combinedDots
+      };
+      
+      // Check if the combined duration is simpler (fewer dots, or shorter type)
+      const isSimplerDuration = 
+        combinedDots < current.duration.dots ||
+        (combinedDots === 0 && current.duration.dots > 0);
+      
+      if (isSimplerDuration && durationToTicks(combinedDuration, ppq) === totalTicks) {
+        // Replace note + rest with longer note + staccato
+        result.push({
+          ...current,
+          duration: combinedDuration,
+          articulation: 'staccato'
+        });
+        i++; // Skip the rest
+        continue;
+      }
+    }
+    
+    // No pattern match, keep event as is
+    result.push(current);
+  }
+  
+  return result;
+}
+
+/**
+ * Convert note duration to MIDI ticks
+ */
+function durationToTicks(duration: NoteDuration, ppq: number): number {
+  // Base duration in ticks (whole note = 4 beats)
+  const baseTicks: Record<NoteDuration['type'], number> = {
+    'whole': ppq * 4,
+    'half': ppq * 2,
+    'quarter': ppq,
+    'eighth': ppq / 2,
+    '16th': ppq / 4,
+    '32nd': ppq / 8,
+    '64th': ppq / 16,
+    '128th': ppq / 32
+  };
+  
+  const base = baseTicks[duration.type];
+  
+  // Add dots (each dot adds half of the previous value)
+  let total = base;
+  let dotValue = base / 2;
+  for (let i = 0; i < duration.dots; i++) {
+    total += dotValue;
+    dotValue /= 2;
+  }
+  
+  return total;
 }
 
 /**

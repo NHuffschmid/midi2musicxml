@@ -56,6 +56,7 @@ export interface NotationNote {
   chord?: {}; // Empty object if this is a chord note (not the first)
   tie?: TieInfo;
   tuplet?: TupletInfo;
+  articulation?: ArticulationType;
 }
 
 export interface NotationRest {
@@ -91,3 +92,5 @@ export interface TupletInfo {
   normalNotes: number;   // e.g., 2 for triplet
   bracket?: boolean;     // Show bracket or not
 }
+
+export type ArticulationType = 'staccato' | 'tenuto' | 'accent' | 'staccatissimo';
