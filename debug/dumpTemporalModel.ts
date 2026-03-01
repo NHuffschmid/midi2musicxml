@@ -119,5 +119,5 @@ function midiToNoteName(midi: number): string {
  */
 export function prettyPrintTemporalModel(score: TemporalScore): string {
   const dump = dumpTemporalModel(score);
-  return `Model: TemporalModel\n${JSON.stringify(dump, null, 2)}`;
+  return `TemporalModel:\n${JSON.stringify(dump, null, 2)}`;
 }

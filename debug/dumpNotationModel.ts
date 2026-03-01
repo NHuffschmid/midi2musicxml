@@ -64,5 +64,5 @@ export function dumpNotationModel(score: NotationScore) {
  * Pretty-print NotationModel
  */
 export function prettyPrintNotationModel(score: NotationScore): string {
-  return `Model: NotationModel\n${JSON.stringify(dumpNotationModel(score), null, 2)}`;
+  return `NotationModel:\n${JSON.stringify(dumpNotationModel(score), null, 2)}`;
 }
