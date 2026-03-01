@@ -70,5 +70,5 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
  * Pretty-print MusicXMLModel
  */
 export function prettyPrintMusicXMLModel(doc: MusicXMLDocument): string {
-  return JSON.stringify(dumpMusicXMLModel(doc), null, 2);
+  return `Model: MusicXMLModel\n${JSON.stringify(dumpMusicXMLModel(doc), null, 2)}`;
 }

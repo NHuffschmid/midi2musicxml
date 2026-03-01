@@ -170,7 +170,7 @@ function midiToNoteName(midi: number): string {
  */
 export function prettyPrintMusicalModel(score: MusicalScore): string {
   const dump = dumpMusicalModel(score);
-  return JSON.stringify(dump, null, 2);
+  return `Model: MusicalModel\n${JSON.stringify(dump, null, 2)}`;
 }
 
 /**

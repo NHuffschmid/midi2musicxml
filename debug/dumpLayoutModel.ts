@@ -59,5 +59,5 @@ export function dumpLayoutModel(score: LayoutScore) {
  * Pretty-print LayoutModel
  */
 export function prettyPrintLayoutModel(score: LayoutScore): string {
-  return JSON.stringify(dumpLayoutModel(score), null, 2);
+  return `Model: LayoutModel\n${JSON.stringify(dumpLayoutModel(score), null, 2)}`;
 }
