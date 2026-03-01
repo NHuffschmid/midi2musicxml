@@ -33,7 +33,10 @@ export function dumpLayoutModel(score: LayoutScore) {
             voiceNumber: voice.voiceNumber,
             staffNumber: voice.staffNumber,
             noteCount: voice.events.filter(e => e.type === 'note').length,
-            restCount: voice.events.filter(e => e.type === 'rest').length
+            restCount: voice.events.filter(e => e.type === 'rest').length,
+            events: voice.events.map(e => ({
+              ...e
+            }))
           }))
         }))
       }))
