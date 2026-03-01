@@ -281,7 +281,6 @@ function convertNote(
     voice: voiceNumber,
     type: note.duration.type,
     dot: note.duration.dots > 0 ? note.duration.dots : undefined,
-    stem: note.stem ? { direction: note.stem } : undefined,
     notations,
     staff: totalStaves > 1 ? staffNumber : undefined
   };
