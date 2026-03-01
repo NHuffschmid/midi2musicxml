@@ -26,8 +26,7 @@ import {
   NotationRest,
   NotationEvent,
   Pitch,
-  NoteDuration,
-  StemDirection
+  NoteDuration
 } from '../models/NotationModel';
 
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
@@ -132,13 +131,11 @@ function convertNote(
   
   const pitch = midiToPitch(musicalNote.midi);
   const duration = ticksToDuration(musicalNote.durationTicks, ppq);
-  const stem = determineStemDirection(voiceNumber, totalVoices);
 
   return {
     type: 'note',
     pitch,
     duration,
-    stem,
     chord: musicalNote.isChordNote ? {} : undefined
   };
 }
@@ -261,21 +258,4 @@ function ticksToDuration(ticks: number, ppq: number): NoteDuration {
     type: type as NoteDuration['type'],
     dots
   };
-}
-
-/**
- * Determine stem direction based on voice number
- * Voice 1 (highest) → stems up
- * Voice 2+ → stems down
- */
-function determineStemDirection(
-  voiceNumber: number,
-  totalVoices: number
-): StemDirection | undefined {
-  
-  if (totalVoices === 1) {
-    return undefined; // Let renderer decide
-  }
-  
-  return voiceNumber === 1 ? 'up' : 'down';
 }

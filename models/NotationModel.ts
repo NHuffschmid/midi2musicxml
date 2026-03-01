@@ -51,7 +51,6 @@ export interface NotationNote {
   type: 'note';
   pitch: Pitch;
   duration: NoteDuration;
-  stem?: StemDirection;
   beam?: BeamInfo;
   chord?: {}; // Empty object if this is a chord note (not the first)
   tie?: TieInfo;
@@ -74,8 +73,6 @@ export interface NoteDuration {
   type: 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
   dots: number; // 0, 1, 2, 3
 }
-
-export type StemDirection = 'up' | 'down' | 'none';
 
 export interface BeamInfo {
   type: 'begin' | 'continue' | 'end' | 'forward-hook' | 'backward-hook';

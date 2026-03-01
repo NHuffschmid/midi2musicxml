@@ -33,8 +33,7 @@ export function dumpNotationModel(score: NotationScore) {
               return {
                 type: 'note' as const,
                 pitch: `${event.pitch.step}${event.pitch.alter ? (event.pitch.alter > 0 ? '#' : 'b') : ''}${event.pitch.octave}`,
-                duration: event.duration,
-                stem: event.stem
+                duration: event.duration
               };
             } else {
               return {
