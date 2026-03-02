@@ -100,7 +100,7 @@ export function midi2MusicXML(
     lineSeparator: '\n'
   });
 
-  // Setup MusicXML test output
+  // Setup MusicXML test output (Of foreign countries and people - measure 10)
   const testMusicXml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="3.1">
@@ -137,137 +137,158 @@ export function midi2MusicXML(
         </direction-type>
         <sound tempo="68"/>
       </direction>
+
+      <note>
+        <pitch>
+          <step>A</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>480</duration>
+        <type>quarter</type>
+        <staff>1</staff>
+      </note>
+      <note>
+        <pitch>
+          <step>F</step>
+          <alter>1</alter>
+          <octave>4</octave>
+        </pitch>
+        <duration>480</duration>
+        <type>quarter</type>
+        <chord/>
+        <staff>1</staff>
+      </note>
+      <note>
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>480</duration>
+        <type>quarter</type>
+        <staff>1</staff>
+      </note>
       <note>
         <pitch>
           <step>B</step>
           <octave>4</octave>
         </pitch>
         <duration>480</duration>
-        <voice>1</voice>
         <type>quarter</type>
+        <chord/>
         <staff>1</staff>
+      </note>
+
+      <backup>
+        <duration>960</duration>
+      </backup>
+
+      <note>
+        <pitch>
+          <step>D</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>160</duration>
+        <type>eighth</type>
+        <dot/>
+        <staff>2</staff>
+        <time-modification>
+          <actual-notes>3</actual-notes>
+          <normal-notes>2</normal-notes>
+        </time-modification>
+        <notations>
+          <tuplet type="start" number="1"/>
+        </notations>
+        <!--beam number="1">begin</beam-->
       </note>
       <note>
         <pitch>
-          <step>G</step>
-          <octave>5</octave>
+          <step>A</step>
+          <octave>3</octave>
         </pitch>
-        <duration>480</duration>
-        <voice>1</voice>
-        <type>quarter</type>
-        <staff>1</staff>
+        <duration>160</duration>
+        <type>eighth</type>
+        <staff>2</staff>
+        <time-modification>
+          <actual-notes>3</actual-notes>
+          <normal-notes>2</normal-notes>
+        </time-modification>
       </note>
       <note>
         <pitch>
           <step>D</step>
           <octave>4</octave>
         </pitch>
-        <duration>180</duration>
-        <voice>2</voice>
-        <type>16th</type>
-        <dot/>
-        <staff>1</staff>
-      </note>
-      <note>
-        <pitch>
-          <step>G</step>
-          <octave>4</octave>
-        </pitch>
-        <duration>180</duration>
-        <voice>2</voice>
-        <type>16th</type>
-        <dot/>
-        <staff>1</staff>
-      </note>
-      <note>
-        <pitch>
-          <step>E</step>
-          <octave>4</octave>
-        </pitch>
-        <duration>180</duration>
-        <voice>2</voice>
-        <type>16th</type>
-        <dot/>
-        <staff>1</staff>
-      </note>
-      <note>
-        <pitch>
-          <step>G</step>
-          <octave>4</octave>
-        </pitch>
-        <duration>180</duration>
-        <voice>2</voice>
-        <type>16th</type>
-        <dot/>
-        <staff>1</staff>
-      </note>
-      <note>
-        <pitch>
-          <step>B</step>
-          <octave>3</octave>
-        </pitch>
-        <duration>180</duration>
-        <voice>2</voice>
-        <type>16th</type>
-        <dot/>
-        <staff>2</staff>
-      </note>
-      <note>
-        <pitch>
-          <step>A</step>
-          <alter>1</alter>
-          <octave>3</octave>
-        </pitch>
-        <duration>180</duration>
-        <voice>2</voice>
-        <type>16th</type>
-        <dot/>
-        <staff>2</staff>
-      </note>
-      <note>
-        <pitch>
-          <step>G</step>
-          <octave>3</octave>
-        </pitch>
-        <duration>240</duration>
-        <voice>3</voice>
+        <duration>160</duration>
         <type>eighth</type>
         <staff>2</staff>
+        <time-modification>
+          <actual-notes>3</actual-notes>
+          <normal-notes>2</normal-notes>
+        </time-modification>
+        <notations>
+          <tuplet type="stop" number="1"/>
+        </notations>
       </note>
-      <note>
-        <rest/>
-        <duration>240</duration>
-        <voice>3</voice>
-        <type>eighth</type>
-        <staff>2</staff>
-      </note>
+      <backup>
+        <duration>120</duration>
+      </backup>
       <note>
         <pitch>
           <step>C</step>
-          <alter>1</alter>
           <octave>3</octave>
         </pitch>
-        <duration>240</duration>
-        <voice>3</voice>
+        <duration>120</duration>
+        <type>16th</type>
+        <staff>2</staff>
+        <voice>2</voice>
+        <!--beam number="1">end</beam-->
+      </note>
+
+      <note>
+        <pitch>
+          <step>B</step>
+          <octave>2</octave>
+        </pitch>
+        <duration>160</duration>
         <type>eighth</type>
         <staff>2</staff>
+        <time-modification>
+          <actual-notes>3</actual-notes>
+          <normal-notes>2</normal-notes>
+        </time-modification>
+        <notations>
+          <tuplet type="start" number="1"/>
+        </notations>
       </note>
       <note>
-        <rest/>
-        <duration>240</duration>
-        <voice>3</voice>
+        <pitch>
+          <step>G</step>
+          <octave>3</octave>
+        </pitch>
+        <duration>160</duration>
         <type>eighth</type>
         <staff>2</staff>
+        <time-modification>
+          <actual-notes>3</actual-notes>
+          <normal-notes>2</normal-notes>
+        </time-modification>
       </note>
-      <backup>
-        <duration>960</duration>
-      </backup>
-      <backup>
-        <duration>720</duration>
-      </backup>
-      <backup>
-        <duration>360</duration>
-      </backup>
+      <note>
+        <pitch>
+          <step>D</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>160</duration>
+        <type>eighth</type>
+        <staff>2</staff>
+        <time-modification>
+          <actual-notes>3</actual-notes>
+          <normal-notes>2</normal-notes>
+        </time-modification>
+        <notations>
+          <tuplet type="stop" number="1"/>
+        </notations>
+      </note>
     </measure>
   </part>
 </score-partwise>`.trim();
