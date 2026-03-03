@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="3.1">
+  <work>
+    <work-title>Of Foreign Countries and People (measure 10)</work-title>
+  </work>
+  <identification>
+    <creator type="composer">Robert Schumann</creator>
+  </identification>
   <part-list>
     <score-part id="P1">
-      <part-name>MusicXML test</part-name>
+      <part-name> </part-name>
     </score-part>
   </part-list>
   <part id="P1">

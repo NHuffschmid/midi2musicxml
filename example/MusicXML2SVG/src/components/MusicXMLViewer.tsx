@@ -16,6 +16,17 @@ export const MusicXMLViewer: React.FC<MusicXMLViewerProps> = ({ musicXmlPath }) 
 
     const loadAndRender = async () => {
       try {
+        // Clear previous OSMD instance
+        if (osmdRef.current) {
+          osmdRef.current.clear();
+          osmdRef.current = null;
+        }
+
+        // Clear container
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
+
         // Create new OSMD instance
         const osmd = new OpenSheetMusicDisplay(containerRef.current!, {
           autoResize: true,
