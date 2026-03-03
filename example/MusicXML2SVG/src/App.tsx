@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MusicXMLViewer } from './components/MusicXMLViewer';
 import './App.css';
 
-// List of available MusicXML files
-const musicXmlFiles = [
-  '/musicxml/OfForeignCountriesMeasure10.xml',
-  '/musicxml/note_durations.xml'
-];
+// Dynamically import all MusicXML files from assets/musicxml folder
+const musicXmlModules = import.meta.glob('./assets/musicxml/*.xml', { eager: true, query: '?url', import: 'default' });
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState<string>(musicXmlFiles[0]);
+  // Extract file paths from the imported modules
+  const musicXmlFiles = useMemo(() => {
+    return Object.entries(musicXmlModules).map(([_path, url]) => url as string);
+  }, []);
+
+  const [selectedFile, setSelectedFile] = useState<string>(musicXmlFiles[0] || '');
 
   return (
     <div className="App">
