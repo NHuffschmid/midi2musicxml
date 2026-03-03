@@ -187,19 +187,15 @@ export function midi2MusicXML(
           <step>D</step>
           <octave>3</octave>
         </pitch>
-        <duration>160</duration>
+        <duration>360</duration>
         <type>eighth</type>
         <dot/>
+        <voice>1</voice>
         <staff>2</staff>
-        <time-modification>
-          <actual-notes>3</actual-notes>
-          <normal-notes>2</normal-notes>
-        </time-modification>
-        <notations>
-          <tuplet type="start" number="1"/>
-        </notations>
-        <!--beam number="1">begin</beam-->
       </note>
+      <backup>
+        <duration>200</duration>
+      </backup>
       <note>
         <pitch>
           <step>A</step>
@@ -207,11 +203,8 @@ export function midi2MusicXML(
         </pitch>
         <duration>160</duration>
         <type>eighth</type>
+        <voice>2</voice>
         <staff>2</staff>
-        <time-modification>
-          <actual-notes>3</actual-notes>
-          <normal-notes>2</normal-notes>
-        </time-modification>
       </note>
       <note>
         <pitch>
@@ -220,28 +213,21 @@ export function midi2MusicXML(
         </pitch>
         <duration>160</duration>
         <type>eighth</type>
+        <voice>2</voice>
         <staff>2</staff>
-        <time-modification>
-          <actual-notes>3</actual-notes>
-          <normal-notes>2</normal-notes>
-        </time-modification>
-        <notations>
-          <tuplet type="stop" number="1"/>
-        </notations>
       </note>
       <backup>
-        <duration>120</duration>
+        <duration>44</duration>
       </backup>
       <note>
         <pitch>
           <step>C</step>
           <octave>3</octave>
         </pitch>
-        <duration>120</duration>
+        <duration>44</duration>
         <type>16th</type>
         <staff>2</staff>
-        <voice>2</voice>
-        <!--beam number="1">end</beam-->
+        <voice>3</voice>
       </note>
 
       <note>
@@ -293,7 +279,7 @@ export function midi2MusicXML(
   </part>
 </score-partwise>`.trim();
 
-  musicXml = testMusicXml;
+  //musicXml = testMusicXml;
 
   return musicXml;
 }
