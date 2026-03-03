@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { MusicXMLViewer } from './components/MusicXMLViewer';
 import './App.css';
 
 // Dynamically import all MusicXML files from assets/musicxml folder
 const musicXmlModules = import.meta.glob('./assets/musicxml/*.xml', { eager: true, query: '?url', import: 'default' });
+
+const STORAGE_KEY = 'musicxml-viewer-selected-file';
 
 function App() {
   // Extract file paths from the imported modules
@@ -11,7 +13,22 @@ function App() {
     return Object.entries(musicXmlModules).map(([_path, url]) => url as string);
   }, []);
 
-  const [selectedFile, setSelectedFile] = useState<string>(musicXmlFiles[0] || '');
+  // Initialize with saved selection from localStorage, or first file
+  const [selectedFile, setSelectedFile] = useState<string>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    // Check if saved file still exists in the current file list
+    if (saved && musicXmlFiles.includes(saved)) {
+      return saved;
+    }
+    return musicXmlFiles[0] || '';
+  });
+
+  // Save selection to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedFile) {
+      localStorage.setItem(STORAGE_KEY, selectedFile);
+    }
+  }, [selectedFile]);
 
   return (
     <div className="App">
