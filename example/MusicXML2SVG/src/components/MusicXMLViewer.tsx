@@ -12,28 +12,27 @@ export const MusicXMLViewer: React.FC<MusicXMLViewerProps> = ({ musicXmlPath }) 
   useEffect(() => {
     if (!containerRef.current || !musicXmlPath) return;
 
+    let cancelled = false;
+
     const loadAndRender = async () => {
       try {
-        // Clear previous content
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
-
         // Create new OSMD instance
-        osmdRef.current = new OpenSheetMusicDisplay(containerRef.current!, {
+        const osmd = new OpenSheetMusicDisplay(containerRef.current!, {
           autoResize: true,
           backend: 'svg',
           drawTitle: true,
         });
 
+        osmdRef.current = osmd;
+
         // Load and render the MusicXML file
-        await osmdRef.current.load(musicXmlPath);
-        osmdRef.current.render();
+        await osmd.load(musicXmlPath);
+        
+        if (!cancelled) {
+          await osmd.render();
+        }
       } catch (error) {
         console.error('Error loading MusicXML:', error);
-        if (containerRef.current) {
-          containerRef.current.innerHTML = `<p style="color: red;">Fehler beim Laden der MusicXML-Datei: ${error}</p>`;
-        }
       }
     };
 
@@ -41,8 +40,10 @@ export const MusicXMLViewer: React.FC<MusicXMLViewerProps> = ({ musicXmlPath }) 
 
     // Cleanup
     return () => {
+      cancelled = true;
       if (osmdRef.current) {
         osmdRef.current.clear();
+        osmdRef.current = null;
       }
     };
   }, [musicXmlPath]);
