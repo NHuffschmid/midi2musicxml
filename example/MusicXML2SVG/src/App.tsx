@@ -4,6 +4,7 @@ import './App.css';
 
 // List of available MusicXML files
 const musicXmlFiles = [
+  '/musicxml/OfForeignCountriesMeasure10.xml',
   '/musicxml/note_durations.xml'
 ];
 
