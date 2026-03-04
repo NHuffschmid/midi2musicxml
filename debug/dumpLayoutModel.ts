@@ -32,10 +32,10 @@ export function dumpLayoutModel(score: LayoutScore) {
           voices: measure.voices.map(voice => ({
             voiceNumber: voice.voiceNumber,
             staffNumber: voice.staffNumber,
-            noteCount: voice.events.filter(e => e.type === 'note').length,
-            restCount: voice.events.filter(e => e.type === 'rest').length,
-            events: voice.events.map(e => ({
-              ...e
+            noteCount: voice.notes.length,
+            notes: voice.notes.map(n => ({
+              pitch: `${n.pitch.step}${n.pitch.alter ? (n.pitch.alter > 0 ? '#' : 'b') : ''}${n.pitch.octave}`,
+              duration: n.duration
             }))
           }))
         }))
@@ -49,11 +49,7 @@ export function dumpLayoutModel(score: LayoutScore) {
       totalNotes: score.parts.reduce((sum, p) => 
         sum + p.staves.reduce((s, st) => 
           s + st.measures.reduce((ss, m) => 
-            ss + m.voices.reduce((sss, v) => sss + v.events.filter(e => e.type === 'note').length, 0), 0), 0), 0),
-      totalRests: score.parts.reduce((sum, p) => 
-        sum + p.staves.reduce((s, st) => 
-          s + st.measures.reduce((ss, m) => 
-            ss + m.voices.reduce((sss, v) => sss + v.events.filter(e => e.type === 'rest').length, 0), 0), 0), 0)
+            ss + m.voices.reduce((sss, v) => sss + v.notes.length, 0), 0), 0), 0)
     }
   };
 }

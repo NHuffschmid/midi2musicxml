@@ -109,9 +109,7 @@ export interface Sound {
 }
 
 export interface NoteElement {
-  chord?: boolean;
-  pitch?: MusicXMLPitch;
-  rest?: Rest;
+  pitch: MusicXMLPitch;
   duration: number;
   voice?: number;
   type: string; // quarter, eighth, etc.
@@ -126,10 +124,6 @@ export interface MusicXMLPitch {
   step: string;
   alter?: number;
   octave: number;
-}
-
-export interface Rest {
-  measure?: boolean; // Full measure rest
 }
 
 export interface Stem {

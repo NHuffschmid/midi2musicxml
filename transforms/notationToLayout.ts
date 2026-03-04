@@ -11,9 +11,7 @@ import {
   NotationScore,
   NotationMeasure,
   NotationVoice,
-  NotationNote,
-  NotationRest,
-  NotationEvent
+  NotationNote
 } from '../models/NotationModel';
 
 import {
@@ -23,8 +21,6 @@ import {
   LayoutMeasure,
   LayoutVoice,
   LayoutNote,
-  LayoutRest,
-  LayoutEvent,
   ClefType
 } from '../models/LayoutModel';
 
@@ -143,21 +139,21 @@ function splitMeasureForPiano(notationMeasure: NotationMeasure): {
   const staff2Voices: LayoutVoice[] = [];
 
   for (const voice of notationMeasure.voices) {
-    const { staff1Events, staff2Events } = splitVoiceByPitch(voice);
+    const { staff1Notes, staff2Notes } = splitVoiceByPitch(voice);
 
-    if (staff1Events.length > 0) {
+    if (staff1Notes.length > 0) {
       staff1Voices.push({
         voiceNumber: voice.voiceNumber,
         staffNumber: 1,
-        events: staff1Events
+        notes: staff1Notes
       });
     }
 
-    if (staff2Events.length > 0) {
+    if (staff2Notes.length > 0) {
       staff2Voices.push({
         voiceNumber: voice.voiceNumber,
         staffNumber: 2,
-        events: staff2Events
+        notes: staff2Notes
       });
     }
   }
@@ -185,57 +181,34 @@ function splitMeasureForPiano(notationMeasure: NotationMeasure): {
 }
 
 /**
- * Split voice events by pitch (C4 = MIDI 60 is the split point)
+ * Split voice notes by pitch (C4 = MIDI 60 is the split point)
  */
 function splitVoiceByPitch(voice: NotationVoice): {
-  staff1Events: LayoutEvent[];
-  staff2Events: LayoutEvent[];
+  staff1Notes: LayoutNote[];
+  staff2Notes: LayoutNote[];
 } {
   
-  const staff1Events: LayoutEvent[] = [];
-  const staff2Events: LayoutEvent[] = [];
+  const staff1Notes: LayoutNote[] = [];
+  const staff2Notes: LayoutNote[] = [];
 
-  // Determine dominant staff for this voice based on first/last notes
-  let dominantStaff = 1;
-  const notes = voice.events.filter(e => e.type === 'note') as NotationNote[];
-  if (notes.length > 0) {
-    const avgMidi = notes.reduce((sum, n) => sum + pitchToMidi(n.pitch), 0) / notes.length;
-    dominantStaff = avgMidi >= 60 ? 1 : 2;
-  }
+  for (const note of voice.notes) {
+    // Assign based on pitch
+    const midi = pitchToMidi(note.pitch);
+    const staffNumber = midi >= 60 ? 1 : 2; // C4 and above → staff 1
 
-  for (const event of voice.events) {
-    if (event.type === 'rest') {
-      // Assign rest to the same staff as the notes in this voice
-      const targetStaff = dominantStaff;
-      const layoutRest: LayoutRest = {
-        ...event,
-        staffNumber: targetStaff
-      };
-      
-      if (targetStaff === 1) {
-        staff1Events.push(layoutRest);
-      } else {
-        staff2Events.push(layoutRest);
-      }
+    const layoutNote: LayoutNote = {
+      ...note,
+      staffNumber
+    };
+
+    if (staffNumber === 1) {
+      staff1Notes.push(layoutNote);
     } else {
-      // Note: assign based on pitch
-      const midi = pitchToMidi(event.pitch);
-      const staffNumber = midi >= 60 ? 1 : 2; // C4 and above → staff 1
-
-      const layoutNote: LayoutNote = {
-        ...event,
-        staffNumber
-      };
-
-      if (staffNumber === 1) {
-        staff1Events.push(layoutNote);
-      } else {
-        staff2Events.push(layoutNote);
-      }
+      staff2Notes.push(layoutNote);
     }
   }
 
-  return { staff1Events, staff2Events };
+  return { staff1Notes, staff2Notes };
 }
 
 /**
@@ -255,11 +228,7 @@ function convertMeasureForSingleStaff(
     voices: notationMeasure.voices.map(voice => ({
       voiceNumber: voice.voiceNumber,
       staffNumber,
-      events: voice.events.map(event => 
-        event.type === 'note' 
-          ? { ...event, staffNumber } as LayoutNote
-          : { ...event, staffNumber } as LayoutRest
-      )
+      notes: voice.notes.map(note => ({ ...note, staffNumber } as LayoutNote))
     })),
     pedalEvents: notationMeasure.pedalEvents
   };

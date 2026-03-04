@@ -11,9 +11,7 @@ import {
   LayoutStaff,
   LayoutMeasure,
   LayoutVoice,
-  LayoutNote,
-  LayoutRest,
-  LayoutEvent
+  LayoutNote
 } from '../models/LayoutModel';
 
 import {
@@ -226,30 +224,12 @@ function convertVoiceToNotes(
   
   const notes: NoteElement[] = [];
 
-  for (const event of voice.events) {
-    const noteElement = convertEvent(event, divisions, voice.voiceNumber, staffNumber, totalStaves);
+  for (const note of voice.notes) {
+    const noteElement = convertNote(note, divisions, voice.voiceNumber, staffNumber, totalStaves);
     notes.push(noteElement);
   }
 
   return notes;
-}
-
-/**
- * Convert a layout event to MusicXML note element
- */
-function convertEvent(
-  event: LayoutEvent,
-  divisions: number,
-  voiceNumber: number,
-  staffNumber: number,
-  totalStaves: number
-): NoteElement {
-  
-  if (event.type === 'rest') {
-    return convertRest(event, divisions, voiceNumber, staffNumber, totalStaves);
-  } else {
-    return convertNote(event, divisions, voiceNumber, staffNumber, totalStaves);
-  }
 }
 
 /**
@@ -271,7 +251,6 @@ function convertNote(
   } : undefined;
 
   return {
-    chord: note.chord !== undefined,
     pitch: {
       step: note.pitch.step,
       alter: note.pitch.alter !== 0 ? note.pitch.alter : undefined,
@@ -282,29 +261,6 @@ function convertNote(
     type: note.duration.type,
     dot: note.duration.dots > 0 ? note.duration.dots : undefined,
     notations,
-    staff: totalStaves > 1 ? staffNumber : undefined
-  };
-}
-
-/**
- * Convert a layout rest to MusicXML rest element
- */
-function convertRest(
-  rest: LayoutRest,
-  divisions: number,
-  voiceNumber: number,
-  staffNumber: number,
-  totalStaves: number
-): NoteElement {
-  
-  const duration = durationInDivisions(rest.duration, divisions);
-
-  return {
-    rest: {},
-    duration,
-    voice: voiceNumber,
-    type: rest.duration.type,
-    dot: rest.duration.dots > 0 ? rest.duration.dots : undefined,
     staff: totalStaves > 1 ? staffNumber : undefined
   };
 }

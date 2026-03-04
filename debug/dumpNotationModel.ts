@@ -28,20 +28,10 @@ export function dumpNotationModel(score: NotationScore) {
         tempo: measure.tempo,
         voices: measure.voices.map(voice => ({
           voiceNumber: voice.voiceNumber,
-          events: voice.events.map(event => {
-            if (event.type === 'note') {
-              return {
-                type: 'note' as const,
-                pitch: `${event.pitch.step}${event.pitch.alter ? (event.pitch.alter > 0 ? '#' : 'b') : ''}${event.pitch.octave}`,
-                duration: event.duration
-              };
-            } else {
-              return {
-                type: 'rest' as const,
-                duration: event.duration
-              };
-            }
-          })
+          notes: voice.notes.map(note => ({
+            pitch: `${note.pitch.step}${note.pitch.alter ? (note.pitch.alter > 0 ? '#' : 'b') : ''}${note.pitch.octave}`,
+            duration: note.duration
+          }))
         }))
       }))
     })),
@@ -51,10 +41,7 @@ export function dumpNotationModel(score: NotationScore) {
         sum + p.measures.reduce((s, m) => s + m.voices.length, 0), 0),
       totalNotes: score.parts.reduce((sum, p) => 
         sum + p.measures.reduce((s, m) => 
-          s + m.voices.reduce((ss, v) => ss + v.events.filter(e => e.type === 'note').length, 0), 0), 0),
-      totalRests: score.parts.reduce((sum, p) => 
-        sum + p.measures.reduce((s, m) => 
-          s + m.voices.reduce((ss, v) => ss + v.events.filter(e => e.type === 'rest').length, 0), 0), 0)
+          s + m.voices.reduce((ss, v) => ss + v.notes.length, 0), 0), 0)
     }
   };
 }

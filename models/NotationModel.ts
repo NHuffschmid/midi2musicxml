@@ -42,25 +42,16 @@ export interface NotationMeasure {
 
 export interface NotationVoice {
   voiceNumber: number;
-  events: NotationEvent[];
+  notes: NotationNote[];
 }
 
-export type NotationEvent = NotationNote | NotationRest;
-
 export interface NotationNote {
-  type: 'note';
   pitch: Pitch;
   duration: NoteDuration;
   beam?: BeamInfo;
-  chord?: {}; // Empty object if this is a chord note (not the first)
   tie?: TieInfo;
   tuplet?: TupletInfo;
   articulation?: ArticulationType;
-}
-
-export interface NotationRest {
-  type: 'rest';
-  duration: NoteDuration;
 }
 
 export interface Pitch {

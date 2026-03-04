@@ -35,24 +35,14 @@ export interface MusicalMeasure {
 
 export interface MusicalVoice {
   voiceNumber: number; // 1 = highest voice
-  events: MusicalEvent[];
+  notes: MusicalNote[];
 }
 
-export type MusicalEvent = MusicalNote | MusicalRest;
-
 export interface MusicalNote {
-  type: 'note';
   midi: number;           // MIDI note number (0-127)
   startTick: number;      // Start position in MIDI ticks
   durationTicks: number;  // Duration in MIDI ticks
   velocity: number;       // MIDI velocity (0-127)
-  isChordNote?: boolean;  // True if this is part of a chord (not the first note)
-}
-
-export interface MusicalRest {
-  type: 'rest';
-  startTick: number;      // Start position in MIDI ticks
-  durationTicks: number;  // Duration in MIDI ticks
 }
 
 export interface TimeSignature {

@@ -275,27 +275,14 @@ function serializeDirection(direction: Direction): string {
 function serializeNote(note: NoteElement): string {
   let xml = `      <note>\n`;
 
-  // Chord
-  if (note.chord) {
-    xml += `        <chord/>\n`;
+  // Pitch
+  xml += `        <pitch>\n`;
+  xml += `          <step>${note.pitch.step}</step>\n`;
+  if (note.pitch.alter !== undefined) {
+    xml += `          <alter>${note.pitch.alter}</alter>\n`;
   }
-
-  // Pitch or Rest
-  if (note.pitch) {
-    xml += `        <pitch>\n`;
-    xml += `          <step>${note.pitch.step}</step>\n`;
-    if (note.pitch.alter !== undefined) {
-      xml += `          <alter>${note.pitch.alter}</alter>\n`;
-    }
-    xml += `          <octave>${note.pitch.octave}</octave>\n`;
-    xml += `        </pitch>\n`;
-  } else if (note.rest) {
-    if (note.rest.measure) {
-      xml += `        <rest measure="yes"/>\n`;
-    } else {
-      xml += `        <rest/>\n`;
-    }
-  }
+  xml += `          <octave>${note.pitch.octave}</octave>\n`;
+  xml += `        </pitch>\n`;
 
   // Duration
   xml += `        <duration>${note.duration}</duration>\n`;

@@ -9,7 +9,7 @@
  * Ready for MusicXML rendering
  */
 
-import { NotationNote, NotationRest, NotationVoice } from './NotationModel';
+import { NotationNote } from './NotationModel';
 import { TimeSignature, KeySignature, PedalEvent } from './MusicalModel';
 
 export interface LayoutScore {
@@ -44,17 +44,11 @@ export interface LayoutMeasure {
 export interface LayoutVoice {
   voiceNumber: number;
   staffNumber: number; // Which staff this voice belongs to
-  events: LayoutEvent[];
+  notes: LayoutNote[];
 }
-
-export type LayoutEvent = LayoutNote | LayoutRest;
 
 export interface LayoutNote extends NotationNote {
   staffNumber: number; // Explicit staff assignment
-}
-
-export interface LayoutRest extends NotationRest {
-  staffNumber?: number; // Optional for rests
 }
 
 export type ClefType = 'G' | 'F' | 'C' | 'percussion' | 'TAB';

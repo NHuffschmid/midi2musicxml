@@ -31,19 +31,17 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
             types: d.directionType
           })),
           notes: m.notes.map(note => ({
-            rest: note.rest ? true : undefined,
-            pitch: note.pitch ? {
+            pitch: {
               step: note.pitch.step,
               alter: note.pitch.alter,
               octave: note.pitch.octave
-            } : undefined,
+            },
             duration: note.duration,
             voice: note.voice,
             type: note.type,
             dot: note.dot,
             stem: note.stem?.direction,
             staff: note.staff,
-            chord: note.chord ? true : undefined,
             beam: note.beam?.map(b => ({ number: b.number, value: b.value })),
             notations: note.notations ? {
               tied: note.notations.tied?.map(t => t.type),
@@ -57,11 +55,7 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
       totalParts: doc.scorePartwise.partList.scoreParts.length,
       totalMeasures: doc.scorePartwise.parts.reduce((sum, p) => sum + p.measures.length, 0),
       totalNotes: doc.scorePartwise.parts.reduce((sum, p) => 
-        sum + p.measures.reduce((s, m) => s + m.notes.length, 0), 0),
-      totalRestNotes: doc.scorePartwise.parts.reduce((sum, p) => 
-        sum + p.measures.reduce((s, m) => s + m.notes.filter(n => n.rest).length, 0), 0),
-      totalPitchedNotes: doc.scorePartwise.parts.reduce((sum, p) => 
-        sum + p.measures.reduce((s, m) => s + m.notes.filter(n => n.pitch).length, 0), 0)
+        sum + p.measures.reduce((s, m) => s + m.notes.length, 0), 0)
     }
   };
 }

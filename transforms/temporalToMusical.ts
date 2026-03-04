@@ -3,8 +3,6 @@
  * 
  * Converts time-based structure to musical semantics:
  * - Voice separation (highest notes → Voice 1)
- * - Rest insertion (fill gaps in each voice)
- * - Chord grouping (simultaneous notes)
  * - Propagate time signature, key signature, tempo metadata
  * 
  * This is the second stage that adds musical interpretation.
@@ -17,14 +15,10 @@ import {
   MusicalMeasure, 
   MusicalVoice, 
   MusicalNote, 
-  MusicalRest,
-  MusicalEvent,
   TimeSignature,
   KeySignature
 } from '../models/MusicalModel';
 import { MidiNote } from '../types';
-
-const CHORD_TICK_TOLERANCE = 20; // Notes within this tick range are considered simultaneous
 
 export interface TemporalToMusicalOptions {
   // Future options can be added here
@@ -129,15 +123,10 @@ function separateVoices(
 ): MusicalVoice[] {
   
   if (midiNotes.length === 0) {
-    // Return a single voice with a full measure rest
-    const measureDurationTicks = (timeSignature.beats * ppq * 4) / timeSignature.beatType;
+    // Return empty voice for empty measure
     return [{
       voiceNumber: 1,
-      events: [{
-        type: 'rest',
-        startTick: 0,
-        durationTicks: measureDurationTicks
-      }]
+      notes: []
     }];
   }
 
@@ -148,77 +137,45 @@ function separateVoices(
   });
 
   // Track voices (each voice tracks its last occupied tick)
-  const voices: Array<{voiceNumber: number; events: MusicalEvent[]; lastTick: number; startTick: number}> = [];
+  const voices: Array<{voiceNumber: number; notes: MusicalNote[]; lastTick: number}> = [];
 
   // Get measure boundaries
   const measureDurationTicks = (timeSignature.beats * ppq * 4) / timeSignature.beatType;
   const measureStartTick = midiNotes.length > 0 ? Math.floor(midiNotes[0].ticks / measureDurationTicks) * measureDurationTicks : 0;
-  const measureEndTick = measureStartTick + measureDurationTicks;
 
   for (const midiNote of sortedNotes) {
     const noteStart = midiNote.ticks;
     const noteEnd = midiNote.ticks + midiNote.durationTicks;
 
-    // Find a voice that is free at this note's start time (with tolerance for chords)
-    let targetVoice = voices.find(v => v.lastTick <= noteStart + CHORD_TICK_TOLERANCE);
+    // Find a voice that is free at this note's start time
+    let targetVoice = voices.find(v => v.lastTick <= noteStart);
 
     if (!targetVoice) {
       // Create new voice
       targetVoice = {
         voiceNumber: voices.length + 1,
-        events: [],
-        lastTick: measureStartTick,
-        startTick: measureStartTick
+        notes: [],
+        lastTick: measureStartTick
       };
       voices.push(targetVoice);
     }
 
-    // Determine if this is a chord note (starts within tolerance of last note in voice)
-    const lastEvent = targetVoice.events[targetVoice.events.length - 1];
-    const isChordNote = lastEvent !== undefined && 
-                        lastEvent.type === 'note' && 
-                        Math.abs(noteStart - lastEvent.startTick) <= CHORD_TICK_TOLERANCE;
-
-    // Add rest if there's a gap (and not within chord tolerance)
-    if (!isChordNote && targetVoice.lastTick < noteStart - CHORD_TICK_TOLERANCE) {
-      targetVoice.events.push({
-        type: 'rest',
-        startTick: targetVoice.lastTick,
-        durationTicks: noteStart - targetVoice.lastTick
-      });
-    }
-
     // Add the note
     const musicalNote: MusicalNote = {
-      type: 'note',
       midi: midiNote.midi,
       startTick: noteStart,
       durationTicks: midiNote.durationTicks,
-      velocity: midiNote.velocity,
-      isChordNote
+      velocity: midiNote.velocity
     };
-    targetVoice.events.push(musicalNote);
+    targetVoice.notes.push(musicalNote);
 
-    // Update last tick (only if this note extends further than chord base)
-    if (!isChordNote || noteEnd > targetVoice.lastTick) {
-      targetVoice.lastTick = Math.max(targetVoice.lastTick, noteEnd);
-    }
-  }
-
-  // Fill remaining time in each voice with rests (to end of measure)
-  for (const voice of voices) {
-    if (voice.lastTick < measureEndTick) {
-      voice.events.push({
-        type: 'rest',
-        startTick: voice.lastTick,
-        durationTicks: measureEndTick - voice.lastTick
-      });
-    }
+    // Update last tick
+    targetVoice.lastTick = Math.max(targetVoice.lastTick, noteEnd);
   }
 
   // Convert to MusicalVoice format
   return voices.map(v => ({
     voiceNumber: v.voiceNumber,
-    events: v.events
+    notes: v.notes
   }));
 }

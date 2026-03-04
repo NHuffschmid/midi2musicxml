@@ -42,10 +42,8 @@ Stage 7: XML String
 - **Purpose**: Musical semantics and structure
 - **Responsibilities**:
   - Voice separation (highest notes → Voice 1)
-  - Rest insertion (fill gaps in each voice)
-  - Chord grouping (simultaneous notes)
   - Propagate metadata (time/key signature, tempo) from TemporalModel
-- **Key Feature**: Each voice is continuous (notes and rests fill all time)
+- **Key Feature**: Voices contain only notes, overlapping notes create multiple voices
 - **File**: `models/MusicalModel.ts`
 - **Transform**: `transforms/temporalToMusical.ts`
 
@@ -54,8 +52,6 @@ Stage 7: XML String
 - **Responsibilities**:
   - Convert MIDI ticks to concrete note values (quarter, eighth, etc.)
   - Convert MIDI numbers to pitches (step, alter, octave)
-  - Determine stem directions (Voice 1: up, Voice 2+: down)
-  - Optimize notation: recognize articulation patterns (e.g., short note + rest → longer note with staccato)
   - Beaming information (future)
   - Tuplets recognition (future)
 - **File**: `models/NotationModel.ts`
@@ -128,25 +124,27 @@ midi2musicxml/
 
 ## Voice Separation Strategy
 
-The pipeline uses a **pragmatic voice separation** approach in **Stage 3 (MusicalModel)**:
+The pipeline uses a **simple voice separation** approach in **Stage 3 (MusicalModel)**:
 
-1. **Voices are created only when necessary** for notation purposes
-2. **Highest notes → Voice 1** (stems up)
-3. **Lower notes → Voice 2, 3, etc.** (stems down)
-4. **Rule**: New voice is created when notes overlap in time
+1. **Voices are created only when necessary** - when notes overlap in time
+2. **Highest notes → Voice 1** (default)
+3. **Lower notes → Voice 2, 3, etc.** when they overlap with Voice 1
+4. **Rule**: New voice is created when a note starts before the previous note in the same voice ends
 
 ### Example
 
 ```
 Temporal Input (Stage 2):
-  Measure contains: C4 [half note], E4 [quarter note]
+  Measure contains: C4 [half note], E4 [quarter note] starting simultaneously
 
 Voice Separation (Stage 3):
-  Voice 1: [eighth rest] E4 [quarter]
+  Voice 1: E4 [quarter] (higher pitch)
   Voice 2: C4 [half]
 
 Result: Voice 1 is higher → notated above Voice 2
 ```
+
+**Note**: Rests and chords are NOT handled in this redesigned pipeline. These features will be added later.
 
 ## Section Detection
 
@@ -160,31 +158,24 @@ This allows the pipeline to handle multi-movement pieces or compositions with di
 
 ## Key Design Decisions
 
-### 1. Voice Structure is Immutable
-Once voices are separated in **Stage 2**, they remain unchanged through all subsequent stages. This ensures consistency and simplifies debugging.
-
-### 2. Rests Fill All Gaps
-Each voice is continuous. Rests are inserted wherever there are gaps, even when other voices are playing.
-
-### 3. Minimal Voices
-Voices are only created when overlap occurs. A simple melody uses one voice, complex polyphony uses multiple voices.
-
-## Key Design Decisions
-
 ### 1. Separation of Temporal and Musical Concerns
-**Stage 2 (TemporalModel)** focuses purely on time-based structure (measures, sections), while **Stage 3 (MusicalModel)** handles musical interpretation (voices, chords). This separation makes the pipeline more maintainable and testable.
+**Stage 2 (TemporalModel)** focuses purely on time-based structure (measures, sections), while **Stage 3 (MusicalModel)** handles musical interpretation (voices). This separation makes the pipeline more maintainable and testable.
 
 ### 2. Voice Structure is Immutable
 Once voices are separated in **Stage 3**, they remain unchanged through all subsequent stages. This ensures consistency and simplifies debugging.
 
-### 3. Rests Fill All Gaps
-Each voice is continuous. Rests are inserted wherever there are gaps, even when other voices are playing.
-
-### 4. Minimal Voices
+### 3. Minimal Voices
 Voices are only created when overlap occurs. A simple melody uses one voice, complex polyphony uses multiple voices.
 
-### 5. Staff Assignment by Pitch
+### 4. Staff Assignment by Pitch
 For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 to bass clef.
+
+### 5. Rests and Chords Not Yet Implemented
+The current pipeline does NOT handle:
+- **Rests**: Gaps between notes are not filled with rest symbols
+- **Chords**: Simultaneous notes are treated as separate notes in different voices
+
+These features will be implemented in a future iteration of the pipeline.
 
 ## Adding New Features
 
@@ -217,7 +208,7 @@ expect(musicalModel.parts[0].measures[0].voices).toHaveLength(2);
 
 // Test Stage 3
 const notationModel = musicalToNotation(musicalModel, options);
-expect(notationModel.parts[0].measures[0].voices[0].events[0].type).toBe('note');
+expect(notationModel.parts[0].measures[0].voices[0].notes[0].pitch).toBeDefined();
 
 // Test full pipeline
 const xml = midi2MusicXML(midi, { clef: 'piano' });
@@ -227,7 +218,8 @@ expect(xml).toContain('<note>');
 ## Future Enhancements
 
 ### Short Term
-- [ ] Improve chord detection (use tick tolerance consistently)
+- [ ] **REST HANDLING**: Implement rest insertion to fill gaps between notes
+- [ ] **CHORD HANDLING**: Detect and group simultaneous notes as chords
 - [ ] Add beaming logic (group eighth notes, etc.)
 - [ ] Implement tuplet recognition (triplets, quintuplets)
 - [ ] Add ties across measures

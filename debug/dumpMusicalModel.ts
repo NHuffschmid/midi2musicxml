@@ -4,7 +4,7 @@
  * Used for testing and debugging the pipeline.
  */
 
-import { MusicalScore, MusicalMeasure, MusicalVoice, MusicalEvent } from '../models/MusicalModel';
+import { MusicalScore, MusicalMeasure, MusicalVoice } from '../models/MusicalModel';
 
 export interface MusicalModelDump {
   metadata: {
@@ -17,7 +17,6 @@ export interface MusicalModelDump {
     totalMeasures: number;
     totalVoices: number;
     totalNotes: number;
-    totalRests: number;
     averageVoicesPerMeasure: number;
   };
 }
@@ -39,19 +38,15 @@ interface MeasureDump {
 
 interface VoiceDump {
   voiceNumber: number;
-  events: EventDump[];
+  notes: NoteDump[];
   noteCount: number;
-  restCount: number;
-  chordCount: number;
 }
 
-interface EventDump {
-  type: 'note' | 'rest';
+interface NoteDump {
   startTick: number;
   durationTicks: number;
-  midi?: number;
-  noteName?: string;
-  isChordNote?: boolean;
+  midi: number;
+  noteName: string;
 }
 
 /**
@@ -59,7 +54,6 @@ interface EventDump {
  */
 export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
   let totalNotes = 0;
-  let totalRests = 0;
   let totalVoices = 0;
   let totalMeasures = 0;
 
@@ -71,7 +65,6 @@ export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
       
       measureDump.voices.forEach(voice => {
         totalNotes += voice.noteCount;
-        totalRests += voice.restCount;
       });
       
       return measureDump;
@@ -95,7 +88,6 @@ export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
       totalMeasures,
       totalVoices,
       totalNotes,
-      totalRests,
       averageVoicesPerMeasure: totalMeasures > 0 ? totalVoices / totalMeasures : 0
     }
   };
@@ -104,7 +96,7 @@ export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
 function dumpMeasure(measure: MusicalMeasure): MeasureDump {
   const voices = measure.voices.map(dumpVoice);
   const duration = voices.length > 0 
-    ? Math.max(...voices.map(v => v.events.reduce((sum, e) => sum + e.durationTicks, 0)))
+    ? Math.max(...voices.map(v => v.notes.reduce((sum, n) => Math.max(sum, n.startTick + n.durationTicks), 0)))
     : 0;
 
   return {
@@ -122,39 +114,17 @@ function dumpMeasure(measure: MusicalMeasure): MeasureDump {
 }
 
 function dumpVoice(voice: MusicalVoice): VoiceDump {
-  let noteCount = 0;
-  let restCount = 0;
-  let chordCount = 0;
-
-  const events: EventDump[] = voice.events.map(event => {
-    if (event.type === 'note') {
-      noteCount++;
-      if (event.isChordNote) chordCount++;
-      
-      return {
-        type: 'note',
-        startTick: event.startTick,
-        durationTicks: event.durationTicks,
-        midi: event.midi,
-        noteName: midiToNoteName(event.midi),
-        isChordNote: event.isChordNote
-      };
-    } else {
-      restCount++;
-      return {
-        type: 'rest',
-        startTick: event.startTick,
-        durationTicks: event.durationTicks
-      };
-    }
-  });
+  const notes: NoteDump[] = voice.notes.map(note => ({
+    startTick: note.startTick,
+    durationTicks: note.durationTicks,
+    midi: note.midi,
+    noteName: midiToNoteName(note.midi)
+  }));
 
   return {
     voiceNumber: voice.voiceNumber,
-    events,
-    noteCount,
-    restCount,
-    chordCount
+    notes,
+    noteCount: notes.length
   };
 }
 
