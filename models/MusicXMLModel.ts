@@ -54,7 +54,6 @@ export interface Measure {
   direction?: Direction[];
   notes: NoteElement[];
   barline?: Barline[];
-  backup?: Backup[];
 }
 
 export interface Attributes {
@@ -118,6 +117,7 @@ export interface NoteElement {
   beam?: Beam[];
   notations?: Notations;
   staff?: number;
+  backupBefore?: number; // Duration to backup before this note (for voice changes)
 }
 
 export interface MusicXMLPitch {
@@ -154,10 +154,6 @@ export interface Tuplet {
 
 export interface Articulation {
   type: 'staccato' | 'tenuto' | 'accent' | 'staccatissimo';
-}
-
-export interface Backup {
-  duration: number;
 }
 
 export interface Print {

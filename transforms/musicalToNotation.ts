@@ -11,14 +11,12 @@
 import {
   MusicalScore,
   MusicalMeasure,
-  MusicalVoice,
   MusicalNote
 } from '../models/MusicalModel';
 
 import {
   NotationScore,
   NotationMeasure,
-  NotationVoice,
   NotationNote,
   Pitch,
   NoteDuration
@@ -66,29 +64,8 @@ function convertMeasure(
     keySignature: musicalMeasure.keySignature,
     tempo: musicalMeasure.tempo,
     sectionStart: musicalMeasure.sectionStart,
-    voices: musicalMeasure.voices.map(voice => 
-      convertVoice(voice, ppq, musicalMeasure.voices.length)
-    ),
+    notes: musicalMeasure.notes.map(note => convertNote(note, ppq)),
     pedalEvents: musicalMeasure.pedalEvents
-  };
-}
-
-/**
- * Convert a musical voice to a notation voice
- */
-function convertVoice(
-  musicalVoice: MusicalVoice,
-  ppq: number,
-  totalVoices: number
-): NotationVoice {
-  
-  const notes = musicalVoice.notes.map(note => 
-    convertNote(note, ppq, musicalVoice.voiceNumber, totalVoices)
-  );
-
-  return {
-    voiceNumber: musicalVoice.voiceNumber,
-    notes
   };
 }
 
@@ -97,17 +74,22 @@ function convertVoice(
  */
 function convertNote(
   musicalNote: MusicalNote,
-  ppq: number,
-  voiceNumber: number,
-  totalVoices: number
+  ppq: number
 ): NotationNote {
   
   const pitch = midiToPitch(musicalNote.midi);
   const duration = ticksToDuration(musicalNote.durationTicks, ppq);
+  
+  // Convert backupBefore from ticks to divisions (if present)
+  const backupBefore = musicalNote.backupBefore !== undefined
+    ? Math.round(musicalNote.backupBefore)
+    : undefined;
 
   return {
     pitch,
-    duration
+    duration,
+    voice: musicalNote.voice,
+    backupBefore
   };
 }
 

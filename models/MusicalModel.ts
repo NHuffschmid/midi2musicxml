@@ -3,8 +3,7 @@
  * 
  * Represents musical semantics after MIDI processing:
  * - Measures with time signatures and key signatures
- * - Voices separated (highest notes = Voice 1)
- * - Notes and Rests as musical events
+ * - Notes with voice assignments
  * - Tempo information
  * 
  * No notation decisions yet (beaming, stem direction, etc.)
@@ -28,14 +27,9 @@ export interface MusicalMeasure {
   timeSignature?: TimeSignature; // Only set if it changes
   keySignature?: KeySignature;   // Only set if it changes
   tempo?: number;                 // Only set if it changes (BPM)
-  voices: MusicalVoice[];
+  notes: MusicalNote[];          // Flat list of all notes with voice numbers
   pedalEvents?: PedalEvent[];     // Sustain pedal events
   sectionStart?: boolean;         // True if this measure starts a new section
-}
-
-export interface MusicalVoice {
-  voiceNumber: number; // 1 = highest voice
-  notes: MusicalNote[];
 }
 
 export interface MusicalNote {
@@ -43,6 +37,8 @@ export interface MusicalNote {
   startTick: number;      // Start position in MIDI ticks
   durationTicks: number;  // Duration in MIDI ticks
   velocity: number;       // MIDI velocity (0-127)
+  voice: number;          // Voice number (1-based)
+  backupBefore?: number;  // Backup in ticks before this note (for voice changes)
 }
 
 export interface TimeSignature {

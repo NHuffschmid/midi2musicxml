@@ -42,13 +42,13 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
             dot: note.dot,
             stem: note.stem?.direction,
             staff: note.staff,
+            backupBefore: note.backupBefore,
             beam: note.beam?.map(b => ({ number: b.number, value: b.value })),
             notations: note.notations ? {
               tied: note.notations.tied?.map(t => t.type),
               tuplet: note.notations.tuplet?.map(t => ({ type: t.type, number: t.number }))
             } : undefined
-          })),
-          backups: m.backup?.map(b => ({ duration: b.duration }))
+          }))
         })))
     })),
     statistics: {

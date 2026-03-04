@@ -41,9 +41,10 @@ Stage 7: XML String
 ### Stage 3: MusicalModel
 - **Purpose**: Musical semantics and structure
 - **Responsibilities**:
-  - Voice separation (highest notes → Voice 1)
+  - Voice separation using time-cursor algorithm
+  - Calculate backup values for voice changes
   - Propagate metadata (time/key signature, tempo) from TemporalModel
-- **Key Feature**: Voices contain only notes, overlapping notes create multiple voices
+- **Key Feature**: Each note has a voice number and optional backup value
 - **File**: `models/MusicalModel.ts`
 - **Transform**: `transforms/temporalToMusical.ts`
 
@@ -64,6 +65,10 @@ Stage 7: XML String
   - Set clef types (G, F, C)
   - System breaks (section starts)
   - Page breaks (future)
+- **Structure**:
+  - `LayoutPart` contains `measures` directly (no separate staff objects)
+  - Each `LayoutNote` has `staffNumber` property
+  - `clefs` array at part level describes clef for each staff
 - **File**: `models/LayoutModel.ts`
 - **Transform**: `transforms/notationToLayout.ts`
 
@@ -72,6 +77,8 @@ Stage 7: XML String
 - **Responsibilities**:
   - 1:1 mapping to MusicXML elements
   - Ready for serialization
+  - Each `NoteElement` contains optional `backupBefore` value
+  - During XML serialization, `<backup>` elements are written before notes as needed
 - **File**: `models/MusicXMLModel.ts`
 - **Transform**: `transforms/layoutToMusicXML.ts`
 
@@ -124,25 +131,46 @@ midi2musicxml/
 
 ## Voice Separation Strategy
 
-The pipeline uses a **simple voice separation** approach in **Stage 3 (MusicalModel)**:
+The pipeline uses a **time-cursor-based voice separation** approach in **Stage 3 (MusicalModel)**:
 
-1. **Voices are created only when necessary** - when notes overlap in time
-2. **Highest notes → Voice 1** (default)
-3. **Lower notes → Voice 2, 3, etc.** when they overlap with Voice 1
-4. **Rule**: New voice is created when a note starts before the previous note in the same voice ends
+### Algorithm
+
+1. **Initialize**: At the beginning of each measure, set voice = 1 and timeCursor = measureStart
+2. **Sort notes**: Process notes in temporal order (by startTick)
+3. **For each note**:
+   - If `note.startTick >= timeCursor`: Continue in current voice
+   - If `note.startTick < timeCursor`: 
+     - Increment voice number
+     - Calculate `backupBefore = timeCursor - note.startTick`
+     - Reset `timeCursor = note.startTick`
+   - Assign voice number to note
+   - Advance `timeCursor += note.durationTicks`
+4. **Reset**: Each measure starts fresh with voice = 1
 
 ### Example
 
 ```
-Temporal Input (Stage 2):
-  Measure contains: C4 [half note], E4 [quarter note] starting simultaneously
+Input notes (in ticks):
+  Note A: start=0,   duration=480 (quarter note)
+  Note B: start=240, duration=240 (starts during A - overlap!)
+  Note C: start=480, duration=480 (after A ends)
 
-Voice Separation (Stage 3):
-  Voice 1: E4 [quarter] (higher pitch)
-  Voice 2: C4 [half]
+Processing:
+  - Note A: timeCursor=0, A.start=0 >= 0 → voice=1, timeCursor → 480
+  - Note B: timeCursor=480, B.start=240 < 480 → voice=2, backup=240, timeCursor → 480
+  - Note C: timeCursor=480, C.start=480 >= 480 → voice=2, timeCursor → 960
 
-Result: Voice 1 is higher → notated above Voice 2
+Result:
+  Voice 1: [Note A]
+  Voice 2: [Note B (backup=240), Note C]
 ```
+
+### Key Features
+
+- **Temporal ordering**: Ensures notes appear in correct chronological sequence in MusicXML
+- **Automatic backup**: When a note starts before current time cursor, a backup element is generated
+- **Per-measure reset**: Voice numbering starts fresh at each measure boundary
+- **Simple and predictable**: No complex overlap detection needed
 
 **Note**: Rests and chords are NOT handled in this redesigned pipeline. These features will be added later.
 

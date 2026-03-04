@@ -121,18 +121,16 @@ function serializeMeasure(measure: Measure): string {
     }
   }
 
-  // Notes
+  // Notes (with backup elements before each note if needed)
   for (const note of measure.notes) {
-    xml += serializeNote(note);
-  }
-
-  // Backup
-  if (measure.backup) {
-    for (const backup of measure.backup) {
+    // Write backup element before note if needed
+    if (note.backupBefore !== undefined && note.backupBefore > 0) {
       xml += `      <backup>\n`;
-      xml += `        <duration>${backup.duration}</duration>\n`;
+      xml += `        <duration>${note.backupBefore}</duration>\n`;
       xml += `      </backup>\n`;
     }
+    
+    xml += serializeNote(note);
   }
 
   // Barline (right/middle side)

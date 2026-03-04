@@ -10,18 +10,16 @@
 import {
   NotationScore,
   NotationMeasure,
-  NotationVoice,
   NotationNote
 } from '../models/NotationModel';
 
 import {
   LayoutScore,
   LayoutPart,
-  LayoutStaff,
   LayoutMeasure,
-  LayoutVoice,
   LayoutNote,
-  ClefType
+  ClefType,
+  ClefInfo
 } from '../models/LayoutModel';
 
 export type InstrumentType = 'piano' | 'violin' | 'viola' | 'cello';
@@ -63,7 +61,7 @@ function convertPart(
     return convertPianoPartToLayout(notationPart, clefs);
   } else {
     // Single staff instruments
-    return convertSingleStaffPartToLayout(notationPart, clefs[0]);
+    return convertSingleStaffPartToLayout(notationPart, clefs);
   }
 }
 
@@ -75,30 +73,38 @@ function convertPianoPartToLayout(
   clefs: ClefType[]
 ): LayoutPart {
   
-  const staff1Measures: LayoutMeasure[] = [];
-  const staff2Measures: LayoutMeasure[] = [];
-
-  for (const notationMeasure of notationPart.measures) {
-    const { staff1, staff2 } = splitMeasureForPiano(notationMeasure);
-    staff1Measures.push(staff1);
-    staff2Measures.push(staff2);
-  }
+  const measures: LayoutMeasure[] = notationPart.measures.map((notationMeasure: NotationMeasure) => {
+    // Add staffNumber to each note based on pitch
+    const notes: LayoutNote[] = notationMeasure.notes.map(note => {
+      const midi = pitchToMidi(note.pitch);
+      const staffNumber = midi >= 60 ? 1 : 2; // C4 and above → staff 1
+      
+      return {
+        ...note,
+        staffNumber
+      };
+    });
+    
+    return {
+      number: notationMeasure.number,
+      timeSignature: notationMeasure.timeSignature,
+      keySignature: notationMeasure.keySignature,
+      tempo: notationMeasure.tempo,
+      sectionStart: notationMeasure.sectionStart,
+      notes,
+      pedalEvents: notationMeasure.pedalEvents
+    };
+  });
 
   return {
     id: notationPart.id,
     name: notationPart.name,
-    staves: [
-      {
-        staffNumber: 1,
-        clef: clefs[0], // Treble
-        measures: staff1Measures
-      },
-      {
-        staffNumber: 2,
-        clef: clefs[1], // Bass
-        measures: staff2Measures
-      }
-    ]
+    measures,
+    clefs: [
+      { sign: clefs[0], line: 2 },  // Treble: G clef on line 2
+      { sign: clefs[1], line: 4 }   // Bass: F clef on line 4
+    ],
+    staffCount: 2
   };
 }
 
@@ -107,7 +113,7 @@ function convertPianoPartToLayout(
  */
 function convertSingleStaffPartToLayout(
   notationPart: any,
-  clef: ClefType
+  clefs: ClefType[]
 ): LayoutPart {
   
   const measures = notationPart.measures.map((measure: NotationMeasure) => 
@@ -117,98 +123,12 @@ function convertSingleStaffPartToLayout(
   return {
     id: notationPart.id,
     name: notationPart.name,
-    staves: [
-      {
-        staffNumber: 1,
-        clef,
-        measures
-      }
-    ]
+    measures,
+    clefs: [
+      { sign: clefs[0], line: getDefaultClefLine(clefs[0]) }
+    ],
+    staffCount: 1
   };
-}
-
-/**
- * Split a measure into two staves for piano
- */
-function splitMeasureForPiano(notationMeasure: NotationMeasure): {
-  staff1: LayoutMeasure;
-  staff2: LayoutMeasure;
-} {
-  
-  const staff1Voices: LayoutVoice[] = [];
-  const staff2Voices: LayoutVoice[] = [];
-
-  for (const voice of notationMeasure.voices) {
-    const { staff1Notes, staff2Notes } = splitVoiceByPitch(voice);
-
-    if (staff1Notes.length > 0) {
-      staff1Voices.push({
-        voiceNumber: voice.voiceNumber,
-        staffNumber: 1,
-        notes: staff1Notes
-      });
-    }
-
-    if (staff2Notes.length > 0) {
-      staff2Voices.push({
-        voiceNumber: voice.voiceNumber,
-        staffNumber: 2,
-        notes: staff2Notes
-      });
-    }
-  }
-
-  return {
-    staff1: {
-      number: notationMeasure.number,
-      timeSignature: notationMeasure.timeSignature,
-      keySignature: notationMeasure.keySignature,
-      tempo: notationMeasure.tempo,
-      sectionStart: notationMeasure.sectionStart,
-      voices: staff1Voices,
-      pedalEvents: notationMeasure.pedalEvents
-    },
-    staff2: {
-      number: notationMeasure.number,
-      timeSignature: notationMeasure.timeSignature,
-      keySignature: notationMeasure.keySignature,
-      tempo: notationMeasure.tempo,
-      sectionStart: notationMeasure.sectionStart,
-      voices: staff2Voices,
-      pedalEvents: notationMeasure.pedalEvents
-    }
-  };
-}
-
-/**
- * Split voice notes by pitch (C4 = MIDI 60 is the split point)
- */
-function splitVoiceByPitch(voice: NotationVoice): {
-  staff1Notes: LayoutNote[];
-  staff2Notes: LayoutNote[];
-} {
-  
-  const staff1Notes: LayoutNote[] = [];
-  const staff2Notes: LayoutNote[] = [];
-
-  for (const note of voice.notes) {
-    // Assign based on pitch
-    const midi = pitchToMidi(note.pitch);
-    const staffNumber = midi >= 60 ? 1 : 2; // C4 and above → staff 1
-
-    const layoutNote: LayoutNote = {
-      ...note,
-      staffNumber
-    };
-
-    if (staffNumber === 1) {
-      staff1Notes.push(layoutNote);
-    } else {
-      staff2Notes.push(layoutNote);
-    }
-  }
-
-  return { staff1Notes, staff2Notes };
 }
 
 /**
@@ -225,11 +145,7 @@ function convertMeasureForSingleStaff(
     keySignature: notationMeasure.keySignature,
     tempo: notationMeasure.tempo,
     sectionStart: notationMeasure.sectionStart,
-    voices: notationMeasure.voices.map(voice => ({
-      voiceNumber: voice.voiceNumber,
-      staffNumber,
-      notes: voice.notes.map(note => ({ ...note, staffNumber } as LayoutNote))
-    })),
+    notes: notationMeasure.notes.map(note => ({ ...note, staffNumber } as LayoutNote)),
     pedalEvents: notationMeasure.pedalEvents
   };
 }
@@ -249,6 +165,22 @@ function getClefs(instrument: InstrumentType): ClefType[] {
       return ['F'];
     default:
       return ['G'];
+  }
+}
+
+/**
+ * Get default line number for clef type
+ */
+function getDefaultClefLine(clef: ClefType): number {
+  switch (clef) {
+    case 'G':
+      return 2;
+    case 'F':
+      return 4;
+    case 'C':
+      return 3;
+    default:
+      return 2;
   }
 }
 

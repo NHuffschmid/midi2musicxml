@@ -13,7 +13,6 @@ import {
   MusicalScore, 
   MusicalPart, 
   MusicalMeasure, 
-  MusicalVoice, 
   MusicalNote, 
   TimeSignature,
   KeySignature
@@ -100,7 +99,7 @@ function convertMeasure(
 ): MusicalMeasure {
 
   // Separate notes into voices
-  const voices = separateVoices(temporalMeasure.notes, ppq, section.timeSignature);
+  const notes = separateVoices(temporalMeasure.notes, ppq, section.timeSignature);
 
   return {
     number: temporalMeasure.number,
@@ -108,74 +107,67 @@ function convertMeasure(
     keySignature: showKeySignature ? section.keySignature : undefined,
     tempo: isFirstMeasure && section.tempo ? section.tempo : undefined,
     sectionStart: isSectionStart || undefined,
-    voices
+    notes
   };
 }
 
 /**
- * Separate notes into voices based on overlapping
- * Highest notes go to Voice 1
+ * Separate notes into voices based on temporal overlap
+ * Uses a time cursor to determine when to start new voices
  */
 function separateVoices(
   midiNotes: MidiNote[],
   ppq: number,
   timeSignature: TimeSignature
-): MusicalVoice[] {
+): MusicalNote[] {
   
   if (midiNotes.length === 0) {
-    // Return empty voice for empty measure
-    return [{
-      voiceNumber: 1,
-      notes: []
-    }];
+    // Return empty array for empty measure
+    return [];
   }
 
-  // Sort notes by: 1. start time, 2. pitch (descending - highest first)
-  const sortedNotes = [...midiNotes].sort((a, b) => {
-    if (a.ticks !== b.ticks) return a.ticks - b.ticks;
-    return b.midi - a.midi; // Higher pitches first
-  });
-
-  // Track voices (each voice tracks its last occupied tick)
-  const voices: Array<{voiceNumber: number; notes: MusicalNote[]; lastTick: number}> = [];
+  // Sort notes by start time only
+  const sortedNotes = [...midiNotes].sort((a, b) => a.ticks - b.ticks);
 
   // Get measure boundaries
   const measureDurationTicks = (timeSignature.beats * ppq * 4) / timeSignature.beatType;
   const measureStartTick = midiNotes.length > 0 ? Math.floor(midiNotes[0].ticks / measureDurationTicks) * measureDurationTicks : 0;
 
+  // Time cursor tracking
+  let timeCursor = measureStartTick;
+  let currentVoice = 1;
+  
+  const notes: MusicalNote[] = [];
+
   for (const midiNote of sortedNotes) {
     const noteStart = midiNote.ticks;
-    const noteEnd = midiNote.ticks + midiNote.durationTicks;
+    const noteDuration = midiNote.durationTicks;
 
-    // Find a voice that is free at this note's start time
-    let targetVoice = voices.find(v => v.lastTick <= noteStart);
+    let backupBefore: number | undefined = undefined;
 
-    if (!targetVoice) {
-      // Create new voice
-      targetVoice = {
-        voiceNumber: voices.length + 1,
-        notes: [],
-        lastTick: measureStartTick
-      };
-      voices.push(targetVoice);
+    // Check if note starts before the time cursor
+    if (noteStart < timeCursor) {
+      // Need to backup and start new voice
+      currentVoice++;
+      backupBefore = timeCursor - noteStart;
+      timeCursor = noteStart;
     }
 
-    // Add the note
+    // Create the musical note
     const musicalNote: MusicalNote = {
       midi: midiNote.midi,
       startTick: noteStart,
-      durationTicks: midiNote.durationTicks,
-      velocity: midiNote.velocity
+      durationTicks: noteDuration,
+      velocity: midiNote.velocity,
+      voice: currentVoice,
+      backupBefore
     };
-    targetVoice.notes.push(musicalNote);
+    
+    notes.push(musicalNote);
 
-    // Update last tick
-    targetVoice.lastTick = Math.max(targetVoice.lastTick, noteEnd);
+    // Advance time cursor
+    timeCursor = noteStart + noteDuration;
   }
 
-  // Convert to MusicalVoice format
-  return voices.map(v => ({
-    voiceNumber: v.voiceNumber,
-    notes: v.notes
-  }));
+  return notes;
 }

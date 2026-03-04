@@ -8,9 +8,7 @@
 import {
   LayoutScore,
   LayoutPart,
-  LayoutStaff,
   LayoutMeasure,
-  LayoutVoice,
   LayoutNote
 } from '../models/LayoutModel';
 
@@ -21,7 +19,6 @@ import {
   Measure,
   Attributes,
   NoteElement,
-  Backup,
   Direction,
   Clef
 } from '../models/MusicXMLModel';
@@ -79,8 +76,9 @@ function convertPart(
   divisions: number
 ): Part {
   
-  // Merge all staves into single measures
-  const measures = mergeMeasuresFromStaves(layoutPart.staves, divisions);
+  const measures = layoutPart.measures.map((measure, index) => 
+    convertMeasure(measure, layoutPart.clefs, layoutPart.staffCount, divisions, index === 0)
+  );
 
   return {
     id: layoutPart.id,
@@ -89,47 +87,19 @@ function convertPart(
 }
 
 /**
- * Merge measures from multiple staves
+ * Convert a layout measure to MusicXML measure
  */
-function mergeMeasuresFromStaves(
-  staves: LayoutStaff[],
-  divisions: number
-): Measure[] {
-  
-  if (staves.length === 0) return [];
-
-  const measureCount = staves[0].measures.length;
-  const measures: Measure[] = [];
-
-  for (let i = 0; i < measureCount; i++) {
-    const measureNumber = i + 1;
-    const staffMeasures = staves.map(staff => staff.measures[i]);
-    const clefs = staves.map(staff => ({ sign: staff.clef, staffNumber: staff.staffNumber }));
-
-    const measure = mergeMeasure(staffMeasures, clefs, measureNumber, divisions, i === 0);
-    measures.push(measure);
-  }
-
-  return measures;
-}
-
-/**
- * Merge measures from different staves into one MusicXML measure
- */
-function mergeMeasure(
-  staffMeasures: LayoutMeasure[],
-  clefs: Array<{ sign: string; staffNumber: number }>,
-  measureNumber: number,
+function convertMeasure(
+  layoutMeasure: LayoutMeasure,
+  clefs: Array<{ sign: string; line?: number }>,
+  staffCount: number,
   divisions: number,
   isFirstMeasure: boolean
 ): Measure {
   
-  const firstMeasure = staffMeasures[0];
-  
   // Attributes (in first measure or when key/time signature changes)
-  const hasKeySignature = firstMeasure.keySignature !== undefined;
-  const hasTimeSignature = firstMeasure.timeSignature !== undefined;
-  const hasTempo = firstMeasure.tempo !== undefined;
+  const hasKeySignature = layoutMeasure.keySignature !== undefined;
+  const hasTimeSignature = layoutMeasure.timeSignature !== undefined;
   const needsAttributes = isFirstMeasure || hasKeySignature || hasTimeSignature;
   
   let attributes: Attributes | undefined;
@@ -137,99 +107,65 @@ function mergeMeasure(
     attributes = {
       divisions: isFirstMeasure ? divisions : undefined,
       key: hasKeySignature ? {
-        fifths: firstMeasure.keySignature!.fifths,
-        mode: firstMeasure.keySignature!.mode
+        fifths: layoutMeasure.keySignature!.fifths,
+        mode: layoutMeasure.keySignature!.mode
       } : undefined,
       time: hasTimeSignature ? {
-        beats: firstMeasure.timeSignature!.beats,
-        beatType: firstMeasure.timeSignature!.beatType
+        beats: layoutMeasure.timeSignature!.beats,
+        beatType: layoutMeasure.timeSignature!.beatType
       } : undefined,
-      staves: isFirstMeasure && staffMeasures.length > 1 ? staffMeasures.length : undefined,
-      clef: isFirstMeasure ? clefs.map(c => ({
+      staves: isFirstMeasure && staffCount > 1 ? staffCount : undefined,
+      clef: isFirstMeasure ? clefs.map((c, index) => ({
         sign: c.sign,
-        line: getClefLine(c.sign),
-        number: staffMeasures.length > 1 ? c.staffNumber : undefined
+        line: c.line,
+        number: staffCount > 1 ? index + 1 : undefined
       })) : undefined
     };
   }
 
   // Direction (tempo)
   const direction: Direction[] = [];
-  if (firstMeasure.tempo) {
+  if (layoutMeasure.tempo) {
     direction.push({
       placement: 'above',
       directionType: [{
         words: {
-          text: `♩ = ${firstMeasure.tempo}`,
+          text: `♩ = ${layoutMeasure.tempo}`,
           fontSize: '10pt'
         }
       }],
-      sound: { tempo: firstMeasure.tempo }
+      sound: { tempo: layoutMeasure.tempo }
     });
   }
 
-  // Collect all notes from all staves
+  // Convert all notes
   const notes: NoteElement[] = [];
-  let backup: Backup[] = [];
 
-  for (let staffIndex = 0; staffIndex < staffMeasures.length; staffIndex++) {
-    const staffMeasure = staffMeasures[staffIndex];
-    const staffNumber = staffIndex + 1;
-
-    for (const voice of staffMeasure.voices) {
-      const voiceNotes = convertVoiceToNotes(voice, divisions, staffNumber, staffMeasures.length);
-      notes.push(...voiceNotes);
-
-      // Add backup to return to start of measure for next voice
-      if (voiceNotes.length > 0) {
-        const totalDuration = voiceNotes.reduce((sum, n) => sum + (n.duration || 0), 0);
-        if (totalDuration > 0) {
-          backup.push({ duration: totalDuration });
-        }
-      }
+  for (const note of layoutMeasure.notes) {
+    const noteElement = convertNote(note, divisions, staffCount);
+    
+    // Add backupBefore if present
+    if (note.backupBefore !== undefined && note.backupBefore > 0) {
+      noteElement.backupBefore = Math.round(note.backupBefore);
     }
-  }
-
-  // Remove last backup (not needed after last voice)
-  if (backup.length > 0) {
-    backup = backup.slice(0, -1);
+    
+    notes.push(noteElement);
   }
 
   // Add print element for section start
-  const print = firstMeasure.sectionStart ? { newSystem: true } : undefined;
+  const print = layoutMeasure.sectionStart ? { newSystem: true } : undefined;
 
   // Add barline for section separation (double barline at left side)
-  const barline = firstMeasure.sectionStart ? [{ location: 'left' as const, barStyle: 'light-light' as const }] : undefined;
+  const barline = layoutMeasure.sectionStart ? [{ location: 'left' as const, barStyle: 'light-light' as const }] : undefined;
 
   return {
-    number: measureNumber,
+    number: layoutMeasure.number,
     print,
     attributes,
     direction: direction.length > 0 ? direction : undefined,
     notes,
-    barline,
-    backup: backup.length > 0 ? backup : undefined
+    barline
   };
-}
-
-/**
- * Convert a voice to MusicXML notes
- */
-function convertVoiceToNotes(
-  voice: LayoutVoice,
-  divisions: number,
-  staffNumber: number,
-  totalStaves: number
-): NoteElement[] {
-  
-  const notes: NoteElement[] = [];
-
-  for (const note of voice.notes) {
-    const noteElement = convertNote(note, divisions, voice.voiceNumber, staffNumber, totalStaves);
-    notes.push(noteElement);
-  }
-
-  return notes;
 }
 
 /**
@@ -238,8 +174,6 @@ function convertVoiceToNotes(
 function convertNote(
   note: LayoutNote,
   divisions: number,
-  voiceNumber: number,
-  staffNumber: number,
   totalStaves: number
 ): NoteElement {
   
@@ -257,11 +191,11 @@ function convertNote(
       octave: note.pitch.octave
     } as import('../models/MusicXMLModel').MusicXMLPitch,
     duration,
-    voice: voiceNumber,
+    voice: note.voice,
     type: note.duration.type,
     dot: note.duration.dots > 0 ? note.duration.dots : undefined,
     notations,
-    staff: totalStaves > 1 ? staffNumber : undefined
+    staff: totalStaves > 1 ? note.staffNumber : undefined
   };
 }
 
@@ -292,16 +226,4 @@ function durationInDivisions(
   }
 
   return Math.round(duration);
-}
-
-/**
- * Get clef line for clef type
- */
-function getClefLine(clefSign: string): number | undefined {
-  const lineMap: Record<string, number> = {
-    'G': 2,
-    'F': 4,
-    'C': 3
-  };
-  return lineMap[clefSign];
 }

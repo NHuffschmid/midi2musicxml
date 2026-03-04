@@ -22,13 +22,9 @@ export interface LayoutScore {
 export interface LayoutPart {
   id: string;
   name: string;
-  staves: LayoutStaff[];
-}
-
-export interface LayoutStaff {
-  staffNumber: number;
-  clef: ClefType;
-  measures: LayoutMeasure[];
+  measures: LayoutMeasure[];     // All measures with notes containing staffNumber
+  clefs: ClefInfo[];              // Clef information for each staff
+  staffCount: number;             // Number of staves (1 for single staff, 2+ for piano/etc)
 }
 
 export interface LayoutMeasure {
@@ -36,15 +32,9 @@ export interface LayoutMeasure {
   timeSignature?: TimeSignature;
   keySignature?: KeySignature;
   tempo?: number;
-  voices: LayoutVoice[];
+  notes: LayoutNote[];           // Flat list of all notes with voice and staff numbers
   pedalEvents?: PedalEvent[];
   sectionStart?: boolean;
-}
-
-export interface LayoutVoice {
-  voiceNumber: number;
-  staffNumber: number; // Which staff this voice belongs to
-  notes: LayoutNote[];
 }
 
 export interface LayoutNote extends NotationNote {

@@ -35,19 +35,16 @@ export interface NotationMeasure {
   timeSignature?: TimeSignature;
   keySignature?: KeySignature;
   tempo?: number;
-  voices: NotationVoice[];
+  notes: NotationNote[];         // Flat list of all notes with voice numbers
   pedalEvents?: PedalEvent[];
   sectionStart?: boolean;
-}
-
-export interface NotationVoice {
-  voiceNumber: number;
-  notes: NotationNote[];
 }
 
 export interface NotationNote {
   pitch: Pitch;
   duration: NoteDuration;
+  voice: number;          // Voice number (1-based)
+  backupBefore?: number;  // Backup in divisions before this note
   beam?: BeamInfo;
   tie?: TieInfo;
   tuplet?: TupletInfo;

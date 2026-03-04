@@ -4,7 +4,7 @@
  * Used for testing and debugging the pipeline.
  */
 
-import { MusicalScore, MusicalMeasure, MusicalVoice } from '../models/MusicalModel';
+import { MusicalScore, MusicalMeasure } from '../models/MusicalModel';
 
 export interface MusicalModelDump {
   metadata: {
@@ -15,9 +15,7 @@ export interface MusicalModelDump {
   parts: PartDump[];
   statistics: {
     totalMeasures: number;
-    totalVoices: number;
     totalNotes: number;
-    averageVoicesPerMeasure: number;
   };
 }
 
@@ -32,14 +30,8 @@ interface MeasureDump {
   timeSignature?: string;
   keySignature?: string;
   tempo?: number;
-  voices: VoiceDump[];
-  duration: number; // Total duration in ticks
-}
-
-interface VoiceDump {
-  voiceNumber: number;
   notes: NoteDump[];
-  noteCount: number;
+  duration: number; // Total duration in ticks
 }
 
 interface NoteDump {
@@ -47,6 +39,8 @@ interface NoteDump {
   durationTicks: number;
   midi: number;
   noteName: string;
+  voice: number;
+  backupBefore?: number;
 }
 
 /**
@@ -54,18 +48,13 @@ interface NoteDump {
  */
 export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
   let totalNotes = 0;
-  let totalVoices = 0;
   let totalMeasures = 0;
 
   const parts: PartDump[] = score.parts.map(part => {
     const measures = part.measures.map(measure => {
       totalMeasures++;
       const measureDump = dumpMeasure(measure);
-      totalVoices += measureDump.voices.length;
-      
-      measureDump.voices.forEach(voice => {
-        totalNotes += voice.noteCount;
-      });
+      totalNotes += measureDump.notes.length;
       
       return measureDump;
     });
@@ -86,17 +75,24 @@ export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
     parts,
     statistics: {
       totalMeasures,
-      totalVoices,
-      totalNotes,
-      averageVoicesPerMeasure: totalMeasures > 0 ? totalVoices / totalMeasures : 0
+      totalNotes
     }
   };
 }
 
 function dumpMeasure(measure: MusicalMeasure): MeasureDump {
-  const voices = measure.voices.map(dumpVoice);
-  const duration = voices.length > 0 
-    ? Math.max(...voices.map(v => v.notes.reduce((sum, n) => Math.max(sum, n.startTick + n.durationTicks), 0)))
+  const notes: NoteDump[] = measure.notes.map(note => ({
+    startTick: note.startTick,
+    durationTicks: note.durationTicks,
+    midi: note.midi,
+    noteName: midiToNoteName(note.midi),
+    voice: note.voice,
+    backupBefore: note.backupBefore
+  }));
+  
+  // Calculate duration (max end tick)
+  const duration = notes.length > 0
+    ? Math.max(...notes.map(n => n.startTick + n.durationTicks))
     : 0;
 
   return {
@@ -108,23 +104,8 @@ function dumpMeasure(measure: MusicalMeasure): MeasureDump {
       ? `${measure.keySignature.fifths > 0 ? '+' : ''}${measure.keySignature.fifths} (${measure.keySignature.mode})`
       : undefined,
     tempo: measure.tempo,
-    voices,
-    duration
-  };
-}
-
-function dumpVoice(voice: MusicalVoice): VoiceDump {
-  const notes: NoteDump[] = voice.notes.map(note => ({
-    startTick: note.startTick,
-    durationTicks: note.durationTicks,
-    midi: note.midi,
-    noteName: midiToNoteName(note.midi)
-  }));
-
-  return {
-    voiceNumber: voice.voiceNumber,
     notes,
-    noteCount: notes.length
+    duration
   };
 }
 
