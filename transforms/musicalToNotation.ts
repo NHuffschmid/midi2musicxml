@@ -88,6 +88,7 @@ function convertNote(
   return {
     pitch,
     duration,
+    durationTicks: musicalNote.durationTicks,  // Preserve exact tick duration
     voice: musicalNote.voice,
     backupBefore
   };

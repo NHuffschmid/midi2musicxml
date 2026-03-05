@@ -43,6 +43,7 @@ export interface NotationMeasure {
 export interface NotationNote {
   pitch: Pitch;
   duration: NoteDuration;
+  durationTicks: number;  // Exact duration in ticks (preserved from MusicalModel)
   voice: number;          // Voice number (1-based)
   backupBefore?: number;  // Backup in divisions before this note
   beam?: BeamInfo;

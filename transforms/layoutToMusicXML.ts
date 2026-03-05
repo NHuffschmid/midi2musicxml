@@ -177,7 +177,8 @@ function convertNote(
   totalStaves: number
 ): NoteElement {
   
-  const duration = durationInDivisions(note.duration, divisions);
+  // Use exact durationTicks instead of re-calculating from type/dots to avoid quantization errors
+  const duration = Math.round(note.durationTicks);
 
   // Build notations if needed (articulations, etc.)
   const notations = note.articulation ? {
@@ -197,33 +198,4 @@ function convertNote(
     notations,
     staff: totalStaves > 1 ? note.staffNumber : undefined
   };
-}
-
-/**
- * Convert note duration to divisions
- */
-function durationInDivisions(
-  noteDuration: { type: string; dots: number },
-  divisions: number
-): number {
-  
-  const baseDurations: Record<string, number> = {
-    'whole': divisions * 4,
-    'half': divisions * 2,
-    'quarter': divisions,
-    'eighth': divisions / 2,
-    '16th': divisions / 4,
-    '32nd': divisions / 8,
-    '64th': divisions / 16,
-    '128th': divisions / 32
-  };
-
-  let duration = baseDurations[noteDuration.type] || divisions;
-
-  // Add dotted duration
-  for (let i = 0; i < noteDuration.dots; i++) {
-    duration += duration / Math.pow(2, i + 1);
-  }
-
-  return Math.round(duration);
 }
