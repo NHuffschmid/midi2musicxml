@@ -61,7 +61,7 @@ Stage 7: XML String
 ### Stage 5: LayoutModel
 - **Purpose**: Physical layout decisions
 - **Responsibilities**:
-  - Assign notes to staves (Piano: C4+ → treble, <C4 → bass)
+  - Assign notes to staves
   - Set clef types (G, F, C)
   - System breaks (section starts)
   - Page breaks (future)

@@ -2,7 +2,7 @@
  * LayoutModel - Stage 4 of the pipeline
  * 
  * Adds layout decisions:
- * - Assignment to staves (for piano: treble and bass clef)
+ * - Assignment to staves
  * - System breaks (not yet implemented)
  * - Page breaks (not yet implemented)
  * 

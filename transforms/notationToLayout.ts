@@ -2,7 +2,7 @@
  * Transform: NotationModel → LayoutModel
  * 
  * Adds layout decisions:
- * - Assign notes to staves (for piano: treble/bass clef based on pitch)
+ * - Assign notes to staves
  * - Set clef types
  * - Prepare for MusicXML rendering
  */
@@ -74,10 +74,20 @@ function convertPianoPartToLayout(
 ): LayoutPart {
   
   const measures: LayoutMeasure[] = notationPart.measures.map((notationMeasure: NotationMeasure) => {
-    // Add staffNumber to each note based on pitch
+    // Calculate average pitch for this measure
+    const midiValues = notationMeasure.notes.map(note => pitchToMidi(note.pitch));
+    const rawAverage = midiValues.length > 0 
+      ? midiValues.reduce((sum, midi) => sum + midi, 0) / midiValues.length
+      : 60; // Default to C4 if no notes
+    
+    // Limit the split point to a reasonable range
+    // This prevents extreme values in very high or very low passages
+    const averageMidi = Math.max(52, Math.min(66, rawAverage));
+    
+    // Add staffNumber to each note based on limited average pitch
     const notes: LayoutNote[] = notationMeasure.notes.map(note => {
       const midi = pitchToMidi(note.pitch);
-      const staffNumber = midi >= 60 ? 1 : 2; // C4 and above → staff 1
+      const staffNumber = midi >= averageMidi ? 1 : 2;
       
       return {
         ...note,
