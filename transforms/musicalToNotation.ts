@@ -4,8 +4,6 @@
  * Adds notation-specific decisions:
  * - Convert MIDI ticks to note durations (quarter, eighth, etc.)
  * - Convert MIDI numbers to pitches (step, alter, octave)
- * - Determine stem directions
- * - Beaming (simplified for now)
  */
 
 import {

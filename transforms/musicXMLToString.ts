@@ -300,18 +300,6 @@ function serializeNote(note: NoteElement): string {
     }
   }
 
-  // Stem
-  if (note.stem) {
-    xml += `        <stem>${note.stem.direction}</stem>\n`;
-  }
-
-  // Beam
-  if (note.beam) {
-    for (const beam of note.beam) {
-      xml += `        <beam number="${beam.number}">${beam.value}</beam>\n`;
-    }
-  }
-
   // Notations
   if (note.notations) {
     xml += `        <notations>\n`;

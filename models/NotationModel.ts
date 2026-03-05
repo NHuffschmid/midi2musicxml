@@ -3,8 +3,6 @@
  * 
  * Adds notation-specific decisions:
  * - Concrete note values (quarter, eighth, etc.)
- * - Beaming information
- * - Stem directions
  * - Tuplets (triplets, etc.)
  * - Ties across measures
  * 
@@ -46,7 +44,6 @@ export interface NotationNote {
   durationTicks: number;  // Exact duration in ticks (preserved from MusicalModel)
   voice: number;          // Voice number (1-based)
   backupBefore?: number;  // Backup in divisions before this note
-  beam?: BeamInfo;
   tie?: TieInfo;
   tuplet?: TupletInfo;
   articulation?: ArticulationType;
@@ -61,11 +58,6 @@ export interface Pitch {
 export interface NoteDuration {
   type: 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
   dots: number; // 0, 1, 2, 3
-}
-
-export interface BeamInfo {
-  type: 'begin' | 'continue' | 'end' | 'forward-hook' | 'backward-hook';
-  level: number; // 1 for 8th notes, 2 for 16th, etc.
 }
 
 export interface TieInfo {

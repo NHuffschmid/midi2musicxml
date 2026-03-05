@@ -113,8 +113,6 @@ export interface NoteElement {
   voice?: number;
   type: string; // quarter, eighth, etc.
   dot?: number; // Number of dots
-  stem?: Stem;
-  beam?: Beam[];
   notations?: Notations;
   staff?: number;
   backupBefore?: number; // Duration to backup before this note (for voice changes)
@@ -124,15 +122,6 @@ export interface MusicXMLPitch {
   step: string;
   alter?: number;
   octave: number;
-}
-
-export interface Stem {
-  direction: 'up' | 'down' | 'none' | 'double';
-}
-
-export interface Beam {
-  number: number; // 1, 2, 3, etc.
-  value: string; // begin, continue, end, forward hook, backward hook
 }
 
 export interface Notations {

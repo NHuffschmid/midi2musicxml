@@ -6,7 +6,7 @@
  * - Notes with voice assignments
  * - Tempo information
  * 
- * No notation decisions yet (beaming, stem direction, etc.)
+ * No notation decisions yet (note types, durations, etc.)
  */
 
 export interface MusicalScore {
