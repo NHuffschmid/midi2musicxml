@@ -273,6 +273,11 @@ function serializeDirection(direction: Direction): string {
 function serializeNote(note: NoteElement): string {
   let xml = `      <note>\n`;
 
+  // Chord (must come before pitch in MusicXML)
+  if (note.chord) {
+    xml += `        <chord/>\n`;
+  }
+
   // Pitch
   xml += `        <pitch>\n`;
   xml += `          <step>${note.pitch.step}</step>\n`;

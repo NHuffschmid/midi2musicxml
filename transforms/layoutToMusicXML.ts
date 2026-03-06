@@ -3,7 +3,14 @@
  * 
  * Converts layout model to MusicXML DOM structure.
  * This is almost a 1:1 mapping.
+ * 
+ * Chord detection: If a note's backupBefore value matches the previous note's duration
+ * (within tolerance), the note is marked as a chord and backupBefore is removed.
  */
+
+// Tolerance for chord detection (in ticks)
+// If |backupBefore - previousDuration| <= this value, notes are considered a chord
+const CHORD_TOLERANCE_TICKS = 10;
 
 import {
   LayoutScore,
@@ -138,18 +145,51 @@ function convertMeasure(
     });
   }
 
-  // Convert all notes
+  // Convert all notes with chord detection
   const notes: NoteElement[] = [];
+  let previousNoteDuration: number | undefined = undefined;
+  let previousStaff: number | undefined = undefined;
 
-  for (const note of layoutMeasure.notes) {
+  for (let i = 0; i < layoutMeasure.notes.length; i++) {
+    const note = layoutMeasure.notes[i];
     const noteElement = convertNote(note, divisions, staffCount);
     
-    // Add backupBefore if present
-    if (note.backupBefore !== undefined && note.backupBefore > 0) {
-      noteElement.backupBefore = Math.round(note.backupBefore);
+    // Chord detection: only within the same staff
+    // If this note's backupBefore matches the previous note's duration AND they're on the same staff
+    const isChord = previousNoteDuration !== undefined &&
+                    previousStaff !== undefined &&
+                    note.staffNumber === previousStaff &&
+                    note.backupBefore !== undefined &&
+                    Math.abs(note.backupBefore - previousNoteDuration) <= CHORD_TOLERANCE_TICKS;
+    
+    // Check if next note will be a chord relative to this note
+    const nextNote = i + 1 < layoutMeasure.notes.length ? layoutMeasure.notes[i + 1] : undefined;
+    const isFirstOfChord = nextNote !== undefined &&
+                           nextNote.staffNumber === note.staffNumber &&
+                           nextNote.backupBefore !== undefined &&
+                           Math.abs(nextNote.backupBefore - note.durationTicks) <= CHORD_TOLERANCE_TICKS;
+    
+    if (isChord) {
+      // This is a chord note - mark as chord, remove voice, and don't add backupBefore
+      noteElement.chord = true;
+      noteElement.voice = undefined;
+    } else {
+      // Not a chord - add backupBefore if present
+      if (note.backupBefore !== undefined && note.backupBefore > 0) {
+        noteElement.backupBefore = Math.round(note.backupBefore);
+      }
+    }
+    
+    // Remove voice from first note of a chord
+    if (isFirstOfChord) {
+      noteElement.voice = undefined;
     }
     
     notes.push(noteElement);
+    
+    // Remember this note's duration and staff for next iteration
+    previousNoteDuration = note.durationTicks;
+    previousStaff = note.staffNumber;
   }
 
   // Add print element for section start

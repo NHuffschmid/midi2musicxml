@@ -40,6 +40,7 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
             voice: note.voice,
             type: note.type,
             dot: note.dot,
+            chord: note.chord,
             staff: note.staff,
             backupBefore: note.backupBefore,
             notations: note.notations ? {

@@ -198,12 +198,17 @@ Voices are only created when overlap occurs. A simple melody uses one voice, com
 ### 4. Staff Assignment by Pitch
 For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 to bass clef.
 
-### 5. Rests and Chords Not Yet Implemented
+### 5. Chord Detection Implementation
+
+The pipeline implements **chord detection** in **Stage 6 (layoutToMusicXML)**:
+
+**Strategy**: If a note's `backupBefore` value matches the previous note's `durationTicks` (within tolerance) **AND both notes are on the same staff**, they are considered simultaneous and form a chord.
+
+### 6. Rests Not Yet Implemented
 The current pipeline does NOT handle:
 - **Rests**: Gaps between notes are not filled with rest symbols
-- **Chords**: Simultaneous notes are treated as separate notes in different voices
 
-These features will be implemented in a future iteration of the pipeline.
+This feature will be implemented in a future iteration of the pipeline.
 
 ## Adding New Features
 
