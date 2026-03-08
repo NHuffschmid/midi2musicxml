@@ -79,6 +79,8 @@ Stage 7: XML String
   - Ready for serialization
   - Each `NoteElement` contains optional `backupBefore` value
   - During XML serialization, `<backup>` elements are written before notes as needed
+  - **Chords**: Notes are grouped to chords
+  - **Beaming**: Notes are grouped with beam elements
 - **File**: `models/MusicXMLModel.ts`
 - **Transform**: `transforms/layoutToMusicXML.ts`
 
@@ -204,6 +206,15 @@ The pipeline implements **chord detection** in **Stage 6 (layoutToMusicXML)**:
 
 **Strategy**: Notes with nearly identical `startTick` values (within tolerance) **AND on the same staff** are considered simultaneous and form a chord.
 
+### 6. Beaming Implementation
+
+The pipeline implements **automatic beaming** in **Stage 6 (layoutToMusicXML)**:
+
+**Strategy**: Notes are beamed together when they:
+- Have beamable note types (eighth, 16th, 32nd, 64th, 128th)
+- Belong to the same staff
+- Have the same voice value
+- Are consecutive (not separated by chords or non-beamable notes)
 
 ### 7. Rests Not Yet Implemented
 The current pipeline does NOT handle:
@@ -254,7 +265,7 @@ expect(xml).toContain('<note>');
 ### Short Term
 - [ ] **REST HANDLING**: Implement rest insertion to fill gaps between notes
 - [x] **CHORD HANDLING**: Detect and group simultaneous notes as chords
-- [ ] Add beaming logic (group eighth notes, etc.)
+- [x] **BEAMING**: Group eighth notes, 16th notes, etc. with beam elements
 - [ ] Implement tuplet recognition (triplets, quintuplets)
 - [ ] Add ties across measures
 - [ ] Pedal events support

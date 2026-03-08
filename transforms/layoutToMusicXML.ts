@@ -145,7 +145,7 @@ function convertMeasure(
     });
   }
 
-  // Convert all notes with chord detection
+  // Convert all notes with chord detection and beaming
   const notes: NoteElement[] = [];
   let previousStartTick: number | undefined = undefined;
   let previousStaff: number | undefined = undefined;
@@ -189,6 +189,9 @@ function convertMeasure(
     previousStartTick = note.startTick;
     previousStaff = note.staffNumber;
   }
+
+  // Apply beaming to notes
+  applyBeaming(notes, layoutMeasure.notes);
 
   // Add print element for section start
   const print = layoutMeasure.sectionStart ? { newSystem: true } : undefined;
@@ -236,5 +239,110 @@ function convertNote(
     notations,
     staff: totalStaves > 1 ? note.staffNumber : undefined
   };
+}
+
+/**
+ * Apply beaming to notes in a measure
+ * Groups notes that should be beamed together based on:
+ * - Same staff
+ * - Same voice
+ * - Beamable note types (eighth, 16th, 32nd, 64th)
+ */
+function applyBeaming(noteElements: NoteElement[], layoutNotes: LayoutNote[]): void {
+  // Track beam groups by staff+voice combination
+  interface BeamGroup {
+    notes: Array<{ noteElement: NoteElement; index: number }>;
+    beamLevels: number; // How many beam levels (1 for eighth, 2 for 16th, etc.)
+  }
+
+  const beamableTypes = new Set(['eighth', '16th', '32nd', '64th', '128th']);
+  const typeLevels: Record<string, number> = {
+    'eighth': 1,
+    '16th': 2,
+    '32nd': 3,
+    '64th': 4,
+    '128th': 5
+  };
+
+  let currentGroup: BeamGroup | null = null;
+  let lastStaff: number | undefined = undefined;
+  let lastVoice: number | undefined = undefined;
+
+  for (let i = 0; i < noteElements.length; i++) {
+    const noteElement = noteElements[i];
+    const layoutNote = layoutNotes[i];
+    const staff = noteElement.staff || 1;
+    const voice = noteElement.voice || 1;
+    const isBeamable = beamableTypes.has(noteElement.type);
+    const isChord = noteElement.chord === true;
+
+    // Check if we should continue the current beam group
+    const canContinueGroup = currentGroup !== null &&
+                             lastStaff === staff &&
+                             lastVoice === voice &&
+                             isBeamable &&
+                             !isChord; // Don't beam across chord boundaries (only first chord note can beam)
+
+    if (canContinueGroup && currentGroup) {
+      // Add to current group
+      currentGroup.notes.push({ noteElement, index: i });
+      currentGroup.beamLevels = Math.max(currentGroup.beamLevels, typeLevels[noteElement.type] || 1);
+    } else {
+      // Finalize previous group
+      if (currentGroup && currentGroup.notes.length > 1) {
+        applyBeamToGroup(currentGroup);
+      }
+
+      // Start new group if this note is beamable and not a chord member
+      if (isBeamable && !isChord) {
+        currentGroup = {
+          notes: [{ noteElement, index: i }],
+          beamLevels: typeLevels[noteElement.type] || 1
+        };
+      } else {
+        currentGroup = null;
+      }
+    }
+
+    lastStaff = staff;
+    lastVoice = voice;
+  }
+
+  // Finalize last group
+  if (currentGroup && currentGroup.notes.length > 1) {
+    applyBeamToGroup(currentGroup);
+  }
+}
+
+/**
+ * Apply beam elements to a group of notes
+ */
+function applyBeamToGroup(group: { notes: Array<{ noteElement: NoteElement; index: number }>; beamLevels: number }): void {
+  const { notes, beamLevels } = group;
+  
+  for (let level = 1; level <= beamLevels; level++) {
+    for (let i = 0; i < notes.length; i++) {
+      const { noteElement } = notes[i];
+      
+      if (!noteElement.beam) {
+        noteElement.beam = [];
+      }
+
+      let beamValue: 'begin' | 'continue' | 'end';
+      
+      if (i === 0) {
+        beamValue = 'begin';
+      } else if (i === notes.length - 1) {
+        beamValue = 'end';
+      } else {
+        beamValue = 'continue';
+      }
+
+      noteElement.beam.push({
+        number: level,
+        value: beamValue
+      });
+    }
+  }
 }
 
