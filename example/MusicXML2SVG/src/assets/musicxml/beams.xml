@@ -223,8 +223,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">begin</beam>
-        <beam number="1">begin</beam>
-        <beam number="1">begin</beam>
+        <beam number="2">begin</beam>
+        <beam number="3">begin</beam>
         <staff>1</staff>
       </note>
       <backup>
@@ -237,9 +237,9 @@
         </pitch>
         <duration>60</duration>
         <type>32nd</type>
-        <beam number="2">begin</beam>
-        <beam number="2">begin</beam>
-        <beam number="2">begin</beam>
+        <beam number="4">begin</beam>
+        <beam number="5">begin</beam>
+        <beam number="6">begin</beam>
         <staff>2</staff>
       </note>
       <note>
@@ -250,8 +250,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
+        <beam number="2">continue</beam>
+        <beam number="3">continue</beam>
         <staff>1</staff>
       </note>
       <note>
@@ -263,8 +263,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
+        <beam number="2">continue</beam>
+        <beam number="3">continue</beam>
         <staff>1</staff>
       </note>
       <backup>
@@ -277,9 +277,9 @@
         </pitch>
         <duration>60</duration>
         <type>32nd</type>
-        <beam number="2">end</beam>
-        <beam number="2">end</beam>
-        <beam number="2">end</beam>
+        <beam number="4">end</beam>
+        <beam number="5">end</beam>
+        <beam number="6">end</beam>
         <staff>2</staff>
       </note>
       <note>
@@ -300,8 +300,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
+        <beam number="2">continue</beam>
+        <beam number="3">continue</beam>
         <staff>1</staff>
       </note>
       <note>
@@ -312,8 +312,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
+        <beam number="2">continue</beam>
+        <beam number="3">continue</beam>
         <staff>1</staff>
       </note>
       <backup>
@@ -326,9 +326,9 @@
         </pitch>
         <duration>60</duration>
         <type>32nd</type>
-        <beam number="3">begin</beam>
-        <beam number="3">begin</beam>
-        <beam number="3">begin</beam>
+        <beam number="7">begin</beam>
+        <beam number="8">begin</beam>
+        <beam number="9">begin</beam>
         <staff>2</staff>
       </note>
       <note>
@@ -340,8 +340,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
+        <beam number="2">continue</beam>
+        <beam number="3">continue</beam>
         <staff>1</staff>
       </note>
       <note>
@@ -352,8 +352,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
-        <beam number="1">continue</beam>
+        <beam number="2">continue</beam>
+        <beam number="3">continue</beam>
         <staff>1</staff>
       </note>
       <backup>
@@ -366,9 +366,9 @@
         </pitch>
         <duration>60</duration>
         <type>32nd</type>
-        <beam number="3">end</beam>
-        <beam number="3">end</beam>
-        <beam number="3">end</beam>
+        <beam number="7">end</beam>
+        <beam number="8">end</beam>
+        <beam number="9">end</beam>
         <staff>2</staff>
       </note>
       <note>
@@ -389,8 +389,8 @@
         <duration>60</duration>
         <type>32nd</type>
         <beam number="1">end</beam>
-        <beam number="1">end</beam>
-        <beam number="1">end</beam>
+        <beam number="2">end</beam>
+        <beam number="3">end</beam>
         <staff>1</staff>
       </note>
     </measure>
