@@ -58,8 +58,6 @@
         <duration>240</duration>
         <voice>2</voice>
         <type>eighth</type>
-        <beam number="3">begin</beam>
-        <beam number="4">begin</beam>
         <staff>2</staff>
       </note>
       <backup>
@@ -74,8 +72,6 @@
         <voice>2</voice>
         <type>16th</type>
         <dot/>
-        <beam number="3">continue</beam>
-        <beam number="4">continue</beam>
         <staff>2</staff>
       </note>
       <backup>
@@ -90,8 +86,6 @@
         <voice>2</voice>
         <type>16th</type>
         <dot/>
-        <beam number="3">continue</beam>
-        <beam number="4">continue</beam>
         <staff>2</staff>
       </note>
       <backup>
@@ -121,8 +115,6 @@
         <voice>2</voice>
         <type>16th</type>
         <dot/>
-        <beam number="3">continue</beam>
-        <beam number="4">continue</beam>
         <staff>2</staff>
       </note>
       <backup>
@@ -137,8 +129,6 @@
         <duration>240</duration>
         <voice>2</voice>
         <type>eighth</type>
-        <beam number="3">end</beam>
-        <beam number="4">end</beam>
         <staff>2</staff>
       </note>
       <note>
@@ -163,8 +153,6 @@
         <voice>8</voice>
         <type>16th</type>
         <dot/>
-        <beam number="1">begin</beam>
-        <beam number="2">begin</beam>
         <staff>1</staff>
       </note>
       <backup>
@@ -179,8 +167,6 @@
         <voice>8</voice>
         <type>16th</type>
         <dot/>
-        <beam number="1">end</beam>
-        <beam number="2">end</beam>
         <staff>1</staff>
       </note>
     </measure>
