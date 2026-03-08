@@ -4,12 +4,13 @@
  * Converts layout model to MusicXML DOM structure.
  * This is almost a 1:1 mapping.
  * 
- * Chord detection: If notes have nearly identical startTick values (within tolerance)
- * and belong to the same staff, they form a chord.
+ * Chord detection: If notes have nearly identical startTick AND durationTicks values 
+ * (within tolerance) and belong to the same staff, they form a chord.
  */
 
 // Tolerance for chord detection (in ticks)
-// If |startTick1 - startTick2| <= this value, notes are considered a chord
+// If |startTick1 - startTick2| <= this value AND |durationTicks1 - durationTicks2| <= this value,
+// notes are considered a chord
 const CHORD_TOLERANCE_TICKS = 10;
 
 import {
@@ -148,23 +149,29 @@ function convertMeasure(
   // Convert all notes with chord detection and beaming
   const notes: NoteElement[] = [];
   let previousStartTick: number | undefined = undefined;
+  let previousDurationTicks: number | undefined = undefined;
   let previousStaff: number | undefined = undefined;
 
   for (let i = 0; i < layoutMeasure.notes.length; i++) {
     const note = layoutMeasure.notes[i];
     const noteElement = convertNote(note, divisions, staffCount);
     
-    // Chord detection: notes with nearly identical startTick on the same staff form a chord
+    // Chord detection: notes with nearly identical startTick AND durationTicks on the same staff form a chord
     const isChord = previousStartTick !== undefined &&
+                    previousDurationTicks !== undefined &&
                     previousStaff !== undefined &&
                     note.staffNumber === previousStaff &&
-                    Math.abs(note.startTick - previousStartTick) <= CHORD_TOLERANCE_TICKS;
+                    Math.abs(note.startTick - previousStartTick) <= CHORD_TOLERANCE_TICKS &&
+                    Math.abs(note.durationTicks - previousDurationTicks) <= CHORD_TOLERANCE_TICKS;
     
     // Check if next note will be a chord relative to this note
     const nextNote = i + 1 < layoutMeasure.notes.length ? layoutMeasure.notes[i + 1] : undefined;
+    const nextLayoutNote = i + 1 < layoutMeasure.notes.length ? layoutMeasure.notes[i + 1] : undefined;
     const isFirstOfChord = nextNote !== undefined &&
-                           nextNote.staffNumber === note.staffNumber &&
-                           Math.abs(nextNote.startTick - note.startTick) <= CHORD_TOLERANCE_TICKS;
+                           nextLayoutNote !== undefined &&
+                           nextLayoutNote.staffNumber === note.staffNumber &&
+                           Math.abs(nextLayoutNote.startTick - note.startTick) <= CHORD_TOLERANCE_TICKS &&
+                           Math.abs(nextLayoutNote.durationTicks - note.durationTicks) <= CHORD_TOLERANCE_TICKS;
     
     if (isChord) {
       // This is a chord note - mark as chord and remove voice and backupBefore
@@ -185,8 +192,9 @@ function convertMeasure(
     
     notes.push(noteElement);
     
-    // Remember this note's startTick and staff for next iteration
+    // Remember this note's startTick, durationTicks and staff for next iteration
     previousStartTick = note.startTick;
+    previousDurationTicks = note.durationTicks;
     previousStaff = note.staffNumber;
   }
 

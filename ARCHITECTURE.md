@@ -204,7 +204,10 @@ For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 
 
 The pipeline implements **chord detection** in **Stage 6 (layoutToMusicXML)**:
 
-**Strategy**: Notes with nearly identical `startTick` values (within tolerance) **AND on the same staff** are considered simultaneous and form a chord.
+**Strategy**: Notes are considered a chord when they:
+- Have nearly identical `startTick` values (within tolerance)
+- Have nearly identical `durationTicks` values (within tolerance)
+- Belong to the same staff
 
 ### 6. Beaming Implementation
 
