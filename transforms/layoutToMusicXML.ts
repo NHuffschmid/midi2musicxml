@@ -4,12 +4,12 @@
  * Converts layout model to MusicXML DOM structure.
  * This is almost a 1:1 mapping.
  * 
- * Chord detection: If a note's backupBefore value matches the previous note's duration
- * (within tolerance), the note is marked as a chord and backupBefore is removed.
+ * Chord detection: If notes have nearly identical startTick values (within tolerance)
+ * and belong to the same staff, they form a chord.
  */
 
 // Tolerance for chord detection (in ticks)
-// If |backupBefore - previousDuration| <= this value, notes are considered a chord
+// If |startTick1 - startTick2| <= this value, notes are considered a chord
 const CHORD_TOLERANCE_TICKS = 10;
 
 import {
@@ -147,32 +147,30 @@ function convertMeasure(
 
   // Convert all notes with chord detection
   const notes: NoteElement[] = [];
-  let previousNoteDuration: number | undefined = undefined;
+  let previousStartTick: number | undefined = undefined;
   let previousStaff: number | undefined = undefined;
 
   for (let i = 0; i < layoutMeasure.notes.length; i++) {
     const note = layoutMeasure.notes[i];
     const noteElement = convertNote(note, divisions, staffCount);
     
-    // Chord detection: only within the same staff
-    // If this note's backupBefore matches the previous note's duration AND they're on the same staff
-    const isChord = previousNoteDuration !== undefined &&
+    // Chord detection: notes with nearly identical startTick on the same staff form a chord
+    const isChord = previousStartTick !== undefined &&
                     previousStaff !== undefined &&
                     note.staffNumber === previousStaff &&
-                    note.backupBefore !== undefined &&
-                    Math.abs(note.backupBefore - previousNoteDuration) <= CHORD_TOLERANCE_TICKS;
+                    Math.abs(note.startTick - previousStartTick) <= CHORD_TOLERANCE_TICKS;
     
     // Check if next note will be a chord relative to this note
     const nextNote = i + 1 < layoutMeasure.notes.length ? layoutMeasure.notes[i + 1] : undefined;
     const isFirstOfChord = nextNote !== undefined &&
                            nextNote.staffNumber === note.staffNumber &&
-                           nextNote.backupBefore !== undefined &&
-                           Math.abs(nextNote.backupBefore - note.durationTicks) <= CHORD_TOLERANCE_TICKS;
+                           Math.abs(nextNote.startTick - note.startTick) <= CHORD_TOLERANCE_TICKS;
     
     if (isChord) {
-      // This is a chord note - mark as chord, remove voice, and don't add backupBefore
+      // This is a chord note - mark as chord and remove voice and backupBefore
       noteElement.chord = true;
       noteElement.voice = undefined;
+      noteElement.backupBefore = undefined;
     } else {
       // Not a chord - add backupBefore if present
       if (note.backupBefore !== undefined && note.backupBefore > 0) {
@@ -187,8 +185,8 @@ function convertMeasure(
     
     notes.push(noteElement);
     
-    // Remember this note's duration and staff for next iteration
-    previousNoteDuration = note.durationTicks;
+    // Remember this note's startTick and staff for next iteration
+    previousStartTick = note.startTick;
     previousStaff = note.staffNumber;
   }
 
@@ -233,9 +231,10 @@ function convertNote(
     } as import('../models/MusicXMLModel').MusicXMLPitch,
     duration,
     voice: note.voice,
-    type: note.duration.type,
-    dot: note.duration.dots > 0 ? note.duration.dots : undefined,
+    type: note.type,
+    dot: note.dots > 0 ? note.dots : undefined,
     notations,
     staff: totalStaves > 1 ? note.staffNumber : undefined
   };
 }
+

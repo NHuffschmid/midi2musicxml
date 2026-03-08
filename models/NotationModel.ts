@@ -40,7 +40,9 @@ export interface NotationMeasure {
 
 export interface NotationNote {
   pitch: Pitch;
-  duration: NoteDuration;
+  type: 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
+  dots: number;           // 0, 1, 2, 3
+  startTick: number;      // Start position in MIDI ticks (preserved from MusicalModel)
   durationTicks: number;  // Exact duration in ticks (preserved from MusicalModel)
   voice: number;          // Voice number (1-based)
   backupBefore?: number;  // Backup in divisions before this note

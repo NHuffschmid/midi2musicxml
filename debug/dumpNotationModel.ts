@@ -30,7 +30,10 @@ export function dumpNotationModel(score: NotationScore) {
           noteCount: measure.notes.length,
           notes: measure.notes.map(note => ({
             pitch: `${note.pitch.step}${note.pitch.alter ? (note.pitch.alter > 0 ? '#' : 'b') : ''}${note.pitch.octave}`,
-            duration: note.duration,
+            type: note.type,
+            dots: note.dots,
+            startTick: note.startTick,
+            durationTicks: note.durationTicks,
             voice: note.voice,
             backupBefore: note.backupBefore
           }))

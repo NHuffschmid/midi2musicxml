@@ -32,7 +32,10 @@ export function dumpLayoutModel(score: LayoutScore) {
           noteCount: measure.notes.length,
           notes: measure.notes.map(n => ({
             pitch: `${n.pitch.step}${n.pitch.alter ? (n.pitch.alter > 0 ? '#' : 'b') : ''}${n.pitch.octave}`,
-            duration: n.duration,
+            type: n.type,
+            dots: n.dots,
+            startTick: n.startTick,
+            durationTicks: n.durationTicks,
             voice: n.voice,
             staffNumber: n.staffNumber,
             backupBefore: n.backupBefore

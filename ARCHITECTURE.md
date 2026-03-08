@@ -202,9 +202,10 @@ For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 
 
 The pipeline implements **chord detection** in **Stage 6 (layoutToMusicXML)**:
 
-**Strategy**: If a note's `backupBefore` value matches the previous note's `durationTicks` (within tolerance) **AND both notes are on the same staff**, they are considered simultaneous and form a chord.
+**Strategy**: Notes with nearly identical `startTick` values (within tolerance) **AND on the same staff** are considered simultaneous and form a chord.
 
-### 6. Rests Not Yet Implemented
+
+### 7. Rests Not Yet Implemented
 The current pipeline does NOT handle:
 - **Rests**: Gaps between notes are not filled with rest symbols
 
@@ -252,7 +253,7 @@ expect(xml).toContain('<note>');
 
 ### Short Term
 - [ ] **REST HANDLING**: Implement rest insertion to fill gaps between notes
-- [ ] **CHORD HANDLING**: Detect and group simultaneous notes as chords
+- [x] **CHORD HANDLING**: Detect and group simultaneous notes as chords
 - [ ] Add beaming logic (group eighth notes, etc.)
 - [ ] Implement tuplet recognition (triplets, quintuplets)
 - [ ] Add ties across measures

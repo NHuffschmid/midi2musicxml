@@ -16,8 +16,7 @@ import {
   NotationScore,
   NotationMeasure,
   NotationNote,
-  Pitch,
-  NoteDuration
+  Pitch
 } from '../models/NotationModel';
 
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
@@ -76,7 +75,7 @@ function convertNote(
 ): NotationNote {
   
   const pitch = midiToPitch(musicalNote.midi);
-  const duration = ticksToDuration(musicalNote.durationTicks, ppq);
+  const { type, dots } = ticksToDuration(musicalNote.durationTicks, ppq);
   
   // Convert backupBefore from ticks to divisions (if present)
   const backupBefore = musicalNote.backupBefore !== undefined
@@ -85,7 +84,9 @@ function convertNote(
 
   return {
     pitch,
-    duration,
+    type: type as NotationNote['type'],
+    dots,
+    startTick: musicalNote.startTick,      // Preserve from MusicalModel
     durationTicks: musicalNote.durationTicks,  // Preserve exact tick duration
     voice: musicalNote.voice,
     backupBefore
@@ -110,11 +111,6 @@ function midiToPitch(midi: number): Pitch {
 /**
  * Convert MIDI ticks to note duration
  */
-function ticksToDuration(ticks: number, ppq: number): NoteDuration {
-  const { type, dots } = midiTicksToXmlDurationType(ticks, ppq);
-  
-  return {
-    type: type as NoteDuration['type'],
-    dots
-  };
+function ticksToDuration(ticks: number, ppq: number): { type: string; dots: number } {
+  return midiTicksToXmlDurationType(ticks, ppq);
 }
