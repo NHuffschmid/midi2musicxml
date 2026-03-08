@@ -1,5 +1,5 @@
 /**
- * LayoutModel - Stage 4 of the pipeline
+ * LayoutModel - Stage 5 of the pipeline
  * 
  * Adds layout decisions:
  * - Assignment to staves
@@ -22,7 +22,7 @@ export interface LayoutScore {
 export interface LayoutPart {
   id: string;
   name: string;
-  measures: LayoutMeasure[];     // All measures with notes containing staffNumber
+  measures: LayoutMeasure[];     // All measures with staves containing notes
   clefs: ClefInfo[];              // Clef information for each staff
   staffCount: number;             // Number of staves (1 for single staff, 2+ for piano/etc)
 }
@@ -32,13 +32,18 @@ export interface LayoutMeasure {
   timeSignature?: TimeSignature;
   keySignature?: KeySignature;
   tempo?: number;
-  notes: LayoutNote[];           // Flat list of all notes with voice and staff numbers
+  staves: LayoutStaff[];         // Notes grouped by staff
   pedalEvents?: PedalEvent[];
   sectionStart?: boolean;
 }
 
+export interface LayoutStaff {
+  number: number;                // Staff number (1-based)
+  notes: LayoutNote[];           // Notes belonging to this staff
+}
+
 export interface LayoutNote extends NotationNote {
-  staffNumber: number; // Explicit staff assignment
+  // Note: staffNumber removed - staff is determined by parent LayoutStaff
 }
 
 export type ClefType = 'G' | 'F' | 'C' | 'percussion' | 'TAB';

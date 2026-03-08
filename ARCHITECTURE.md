@@ -61,13 +61,13 @@ Stage 7: XML String
 ### Stage 5: LayoutModel
 - **Purpose**: Physical layout decisions
 - **Responsibilities**:
-  - Assign notes to staves
+  - Assign notes to staves (grouped by staff)
   - Set clef types (G, F, C)
   - System breaks (section starts)
   - Page breaks (future)
 - **Structure**:
-  - `LayoutPart` contains `measures` directly (no separate staff objects)
-  - Each `LayoutNote` has `staffNumber` property
+  - `LayoutMeasure` contains `staves: LayoutStaff[]` (notes grouped by staff)
+  - Each `LayoutStaff` has `number` and `notes: LayoutNote[]`
   - `clefs` array at part level describes clef for each staff
 - **File**: `models/LayoutModel.ts`
 - **Transform**: `transforms/notationToLayout.ts`
@@ -219,7 +219,8 @@ The pipeline implements **automatic beaming** in **Stage 6 (layoutToMusicXML)**:
 - Have the same voice value
 - Are consecutive (not separated by chords or non-beamable notes)
 
-### 7. Rests Not Yet Implemented
+
+### 8. Rests Not Yet Implemented
 The current pipeline does NOT handle:
 - **Rests**: Gaps between notes are not filled with rest symbols
 

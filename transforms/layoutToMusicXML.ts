@@ -146,60 +146,52 @@ function convertMeasure(
     });
   }
 
-  // Convert all notes with chord detection and beaming
-  const notes: NoteElement[] = [];
-  let previousStartTick: number | undefined = undefined;
-  let previousDurationTicks: number | undefined = undefined;
-  let previousStaff: number | undefined = undefined;
+  // Process each staff independently, then merge and sort
+  interface NoteWithStaff {
+    noteElement: NoteElement;
+    layoutNote: LayoutNote;
+    staffNumber: number;
+  }
+  const allNotes: NoteWithStaff[] = [];
 
-  for (let i = 0; i < layoutMeasure.notes.length; i++) {
-    const note = layoutMeasure.notes[i];
-    const noteElement = convertNote(note, divisions, staffCount);
-    
-    // Chord detection: notes with nearly identical startTick AND durationTicks on the same staff form a chord
-    const isChord = previousStartTick !== undefined &&
-                    previousDurationTicks !== undefined &&
-                    previousStaff !== undefined &&
-                    note.staffNumber === previousStaff &&
-                    Math.abs(note.startTick - previousStartTick) <= CHORD_TOLERANCE_TICKS &&
-                    Math.abs(note.durationTicks - previousDurationTicks) <= CHORD_TOLERANCE_TICKS;
-    
-    // Check if next note will be a chord relative to this note
-    const nextNote = i + 1 < layoutMeasure.notes.length ? layoutMeasure.notes[i + 1] : undefined;
-    const nextLayoutNote = i + 1 < layoutMeasure.notes.length ? layoutMeasure.notes[i + 1] : undefined;
-    const isFirstOfChord = nextNote !== undefined &&
-                           nextLayoutNote !== undefined &&
-                           nextLayoutNote.staffNumber === note.staffNumber &&
-                           Math.abs(nextLayoutNote.startTick - note.startTick) <= CHORD_TOLERANCE_TICKS &&
-                           Math.abs(nextLayoutNote.durationTicks - note.durationTicks) <= CHORD_TOLERANCE_TICKS;
-    
-    if (isChord) {
-      // This is a chord note - mark as chord and remove voice and backupBefore
-      noteElement.chord = true;
-      noteElement.voice = undefined;
-      noteElement.backupBefore = undefined;
-    } else {
-      // Not a chord - add backupBefore if present
-      if (note.backupBefore !== undefined && note.backupBefore > 0) {
-        noteElement.backupBefore = Math.round(note.backupBefore);
-      }
+  for (const staff of layoutMeasure.staves) {
+    // Convert notes for this staff
+    const staffNotes: NoteElement[] = staff.notes.map(note => 
+      convertNote(note, divisions, staffCount)
+    );
+
+    // Apply chord detection for this staff
+    applyChordDetection(staffNotes, staff.notes);
+
+    // Apply beaming for this staff
+    applyBeaming(staffNotes, staff.notes);
+
+    // Add staff number and collect
+    for (let i = 0; i < staffNotes.length; i++) {
+      allNotes.push({
+        noteElement: staffNotes[i],
+        layoutNote: staff.notes[i],
+        staffNumber: staff.number
+      });
     }
-    
-    // Remove voice from first note of a chord
-    if (isFirstOfChord) {
-      noteElement.voice = undefined;
-    }
-    
-    notes.push(noteElement);
-    
-    // Remember this note's startTick, durationTicks and staff for next iteration
-    previousStartTick = note.startTick;
-    previousDurationTicks = note.durationTicks;
-    previousStaff = note.staffNumber;
   }
 
-  // Apply beaming to notes
-  applyBeaming(notes, layoutMeasure.notes);
+  // Sort notes by startTick (primary) and voice (secondary) to restore temporal order
+  allNotes.sort((a, b) => {
+    if (a.layoutNote.startTick !== b.layoutNote.startTick) {
+      return a.layoutNote.startTick - b.layoutNote.startTick;
+    }
+    // Secondary sort by voice (if present)
+    const voiceA = a.noteElement.voice || 0;
+    const voiceB = b.noteElement.voice || 0;
+    return voiceA - voiceB;
+  });
+
+  // Extract final note elements with staff assignment
+  const notes: NoteElement[] = allNotes.map(({ noteElement, staffNumber }) => ({
+    ...noteElement,
+    staff: staffCount > 1 ? staffNumber : undefined
+  }));
 
   // Add print element for section start
   const print = layoutMeasure.sectionStart ? { newSystem: true } : undefined;
@@ -219,6 +211,7 @@ function convertMeasure(
 
 /**
  * Convert a layout note to MusicXML note element
+ * Note: staff number is assigned later in convertMeasure
  */
 function convertNote(
   note: LayoutNote,
@@ -244,20 +237,67 @@ function convertNote(
     voice: note.voice,
     type: note.type,
     dot: note.dots > 0 ? note.dots : undefined,
-    notations,
-    staff: totalStaves > 1 ? note.staffNumber : undefined
+    notations
+    // Note: staff property is added later in convertMeasure after sorting
   };
 }
 
 /**
- * Apply beaming to notes in a measure
+ * Apply chord detection to a staff's notes
+ * Notes with same startTick and durationTicks are marked as chord
+ */
+function applyChordDetection(noteElements: NoteElement[], layoutNotes: LayoutNote[]): void {
+  let previousStartTick: number | undefined = undefined;
+  let previousDurationTicks: number | undefined = undefined;
+
+  for (let i = 0; i < noteElements.length; i++) {
+    const noteElement = noteElements[i];
+    const layoutNote = layoutNotes[i];
+    
+    // Chord detection: notes with nearly identical startTick AND durationTicks form a chord
+    const isChord = previousStartTick !== undefined &&
+                    previousDurationTicks !== undefined &&
+                    Math.abs(layoutNote.startTick - previousStartTick) <= CHORD_TOLERANCE_TICKS &&
+                    Math.abs(layoutNote.durationTicks - previousDurationTicks) <= CHORD_TOLERANCE_TICKS;
+    
+    // Check if next note will be a chord relative to this note
+    const nextLayoutNote = i + 1 < layoutNotes.length ? layoutNotes[i + 1] : undefined;
+    const isFirstOfChord = nextLayoutNote !== undefined &&
+                           Math.abs(nextLayoutNote.startTick - layoutNote.startTick) <= CHORD_TOLERANCE_TICKS &&
+                           Math.abs(nextLayoutNote.durationTicks - layoutNote.durationTicks) <= CHORD_TOLERANCE_TICKS;
+    
+    if (isChord) {
+      // This is a chord note - mark as chord and remove voice and backupBefore
+      noteElement.chord = true;
+      noteElement.voice = undefined;
+      noteElement.backupBefore = undefined;
+    } else {
+      // Not a chord - add backupBefore if present
+      if (layoutNote.backupBefore !== undefined && layoutNote.backupBefore > 0) {
+        noteElement.backupBefore = Math.round(layoutNote.backupBefore);
+      }
+    }
+    
+    // Remove voice from first note of a chord
+    if (isFirstOfChord) {
+      noteElement.voice = undefined;
+    }
+    
+    // Remember this note's startTick and durationTicks for next iteration
+    previousStartTick = layoutNote.startTick;
+    previousDurationTicks = layoutNote.durationTicks;
+  }
+}
+
+/**
+ * Apply beaming to notes within a single staff
  * Groups notes that should be beamed together based on:
- * - Same staff
  * - Same voice
  * - Beamable note types (eighth, 16th, 32nd, 64th)
+ * Note: This function is called per staff, so no staff checking needed
  */
 function applyBeaming(noteElements: NoteElement[], layoutNotes: LayoutNote[]): void {
-  // Track beam groups by staff+voice combination
+  // Track beam groups by voice
   interface BeamGroup {
     notes: Array<{ noteElement: NoteElement; index: number }>;
     beamLevels: number; // How many beam levels (1 for eighth, 2 for 16th, etc.)
@@ -273,20 +313,17 @@ function applyBeaming(noteElements: NoteElement[], layoutNotes: LayoutNote[]): v
   };
 
   let currentGroup: BeamGroup | null = null;
-  let lastStaff: number | undefined = undefined;
   let lastVoice: number | undefined = undefined;
 
   for (let i = 0; i < noteElements.length; i++) {
     const noteElement = noteElements[i];
     const layoutNote = layoutNotes[i];
-    const staff = noteElement.staff || 1;
     const voice = noteElement.voice || 1;
     const isBeamable = beamableTypes.has(noteElement.type);
     const isChord = noteElement.chord === true;
 
     // Check if we should continue the current beam group
     const canContinueGroup = currentGroup !== null &&
-                             lastStaff === staff &&
                              lastVoice === voice &&
                              isBeamable &&
                              !isChord; // Don't beam across chord boundaries (only first chord note can beam)
@@ -312,7 +349,6 @@ function applyBeaming(noteElements: NoteElement[], layoutNotes: LayoutNote[]): v
       }
     }
 
-    lastStaff = staff;
     lastVoice = voice;
   }
 

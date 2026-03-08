@@ -17,6 +17,7 @@ import {
   LayoutScore,
   LayoutPart,
   LayoutMeasure,
+  LayoutStaff,
   LayoutNote,
   ClefType,
   ClefInfo
@@ -84,16 +85,20 @@ function convertPianoPartToLayout(
     // This prevents extreme values in very high or very low passages
     const averageMidi = Math.max(52, Math.min(66, rawAverage));
     
-    // Add staffNumber to each note based on limited average pitch
-    const notes: LayoutNote[] = notationMeasure.notes.map(note => {
+    // Group notes by staff
+    const staff1Notes: LayoutNote[] = [];
+    const staff2Notes: LayoutNote[] = [];
+    
+    for (const note of notationMeasure.notes) {
       const midi = pitchToMidi(note.pitch);
-      const staffNumber = midi >= averageMidi ? 1 : 2;
+      const layoutNote: LayoutNote = { ...note };
       
-      return {
-        ...note,
-        staffNumber
-      };
-    });
+      if (midi >= averageMidi) {
+        staff1Notes.push(layoutNote);
+      } else {
+        staff2Notes.push(layoutNote);
+      }
+    }
     
     return {
       number: notationMeasure.number,
@@ -101,7 +106,10 @@ function convertPianoPartToLayout(
       keySignature: notationMeasure.keySignature,
       tempo: notationMeasure.tempo,
       sectionStart: notationMeasure.sectionStart,
-      notes,
+      staves: [
+        { number: 1, notes: staff1Notes },
+        { number: 2, notes: staff2Notes }
+      ],
       pedalEvents: notationMeasure.pedalEvents
     };
   });
@@ -155,7 +163,12 @@ function convertMeasureForSingleStaff(
     keySignature: notationMeasure.keySignature,
     tempo: notationMeasure.tempo,
     sectionStart: notationMeasure.sectionStart,
-    notes: notationMeasure.notes.map(note => ({ ...note, staffNumber } as LayoutNote)),
+    staves: [
+      {
+        number: staffNumber,
+        notes: notationMeasure.notes.map(note => ({ ...note } as LayoutNote))
+      }
+    ],
     pedalEvents: notationMeasure.pedalEvents
   };
 }
