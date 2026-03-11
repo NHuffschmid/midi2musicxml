@@ -163,14 +163,6 @@ function validateMeasure(
       });
     }
 
-    // Validate backupBefore (if present)
-    if (note.backupBefore !== undefined && note.backupBefore < 0) {
-      errors.push({
-        severity: 'error',
-        message: `Invalid backupBefore value: ${note.backupBefore} (must be >= 0)`,
-        location: noteLocation
-      });
-    }
   });
 
   return { valid: errors.length === 0, errors, warnings };

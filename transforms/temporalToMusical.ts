@@ -143,13 +143,10 @@ function separateVoices(
     const noteStart = midiNote.ticks;
     const noteDuration = midiNote.durationTicks;
 
-    let backupBefore: number | undefined = undefined;
-
     // Check if note starts before the time cursor
     if (noteStart < timeCursor) {
       // Need to backup and start new voice
       currentVoice++;
-      backupBefore = timeCursor - noteStart;
       timeCursor = noteStart;
     }
 
@@ -159,8 +156,7 @@ function separateVoices(
       startTick: noteStart,
       durationTicks: noteDuration,
       velocity: midiNote.velocity,
-      voice: currentVoice,
-      backupBefore
+      voice: currentVoice
     };
     
     notes.push(musicalNote);

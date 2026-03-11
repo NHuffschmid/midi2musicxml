@@ -77,10 +77,7 @@ Stage 7: XML String
 - **Responsibilities**:
   - 1:1 mapping to MusicXML elements
   - Ready for serialization
-  - Each `NoteElement` contains optional `backupBefore` value
   - During XML serialization, `<backup>` elements are written before notes as needed
-  - **Chords**: Notes are grouped to chords
-  - **Beaming**: Notes are grouped with beam elements
 - **File**: `models/MusicXMLModel.ts`
 - **Transform**: `transforms/layoutToMusicXML.ts`
 
@@ -199,26 +196,6 @@ Voices are only created when overlap occurs. A simple melody uses one voice, com
 
 ### 4. Staff Assignment by Pitch
 For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 to bass clef.
-
-### 5. Chord Detection Implementation
-
-The pipeline implements **chord detection** in **Stage 6 (layoutToMusicXML)**:
-
-**Strategy**: Notes are considered a chord when they:
-- Have nearly identical `startTick` values (within tolerance)
-- Have nearly identical `durationTicks` values (within tolerance)
-- Belong to the same staff
-
-### 6. Beaming Implementation
-
-The pipeline implements **automatic beaming** in **Stage 6 (layoutToMusicXML)**:
-
-**Strategy**: Notes are beamed together when they:
-- Have beamable note types (eighth, 16th, 32nd, 64th, 128th)
-- Belong to the same staff
-- Have the same voice value
-- Are consecutive (not separated by chords or non-beamable notes)
-
 
 ### 8. Rests Not Yet Implemented
 The current pipeline does NOT handle:

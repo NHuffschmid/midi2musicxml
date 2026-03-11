@@ -3,15 +3,7 @@
  * 
  * Converts layout model to MusicXML DOM structure.
  * This is almost a 1:1 mapping.
- * 
- * Chord detection: If notes have nearly identical startTick AND durationTicks values 
- * (within tolerance) and belong to the same staff, they form a chord.
  */
-
-// Tolerance for chord detection (in ticks)
-// If |startTick1 - startTick2| <= this value AND |durationTicks1 - durationTicks2| <= this value,
-// notes are considered a chord
-const CHORD_TOLERANCE_TICKS = 10;
 
 import {
   LayoutScore,
@@ -154,20 +146,11 @@ function convertMeasure(
   }
   const allNotes: NoteWithStaff[] = [];
 
-  // Track next available beam number (measure-wide unique)
-  let nextBeamNumber = 1;
-
   for (const staff of layoutMeasure.staves) {
     // Convert notes for this staff
     const staffNotes: NoteElement[] = staff.notes.map(note => 
       convertNote(note, divisions, staffCount)
     );
-
-    // Apply beaming first (before chord detection, so voices are stable)
-    nextBeamNumber = applyBeaming(staffNotes, staff.notes, nextBeamNumber);
-
-    // Apply chord detection after beaming (so chord members get correct voice)
-    applyChordDetection(staffNotes, staff.notes);
 
     // Add staff number and collect
     for (let i = 0; i < staffNotes.length; i++) {
@@ -190,11 +173,15 @@ function convertMeasure(
     return voiceA - voiceB;
   });
 
-  // Extract final note elements with staff assignment
-  const notes: NoteElement[] = allNotes.map(({ noteElement, staffNumber }) => ({
-    ...noteElement,
-    staff: staffCount > 1 ? staffNumber : undefined
-  }));
+  // Render notes with backup elements
+    const notes: NoteElement[] = [];
+    for (const { noteElement, layoutNote, staffNumber } of allNotes) {
+      notes.push({
+        ...noteElement,
+        staff: staffCount > 1 ? staffNumber : undefined,
+        startTick: layoutNote.startTick
+      });
+    }
 
   // Add print element for section start
   const print = layoutMeasure.sectionStart ? { newSystem: true } : undefined;
@@ -240,168 +227,8 @@ function convertNote(
     voice: note.voice,
     type: note.type,
     dot: note.dots > 0 ? note.dots : undefined,
-    notations
+    notations,
+    startTick: note.startTick
     // Note: staff property is added later in convertMeasure after sorting
   };
 }
-
-/**
- * Apply chord detection to a staff's notes
- * Notes with same startTick and durationTicks are marked as chord
- */
-function applyChordDetection(noteElements: NoteElement[], layoutNotes: LayoutNote[]): void {
-  let previousStartTick: number | undefined = undefined;
-  let previousDurationTicks: number | undefined = undefined;
-  let chordVoice: number | undefined = undefined;
-
-  for (let i = 0; i < noteElements.length; i++) {
-    const noteElement = noteElements[i];
-    const layoutNote = layoutNotes[i];
-    
-    // Chord detection: notes with nearly identical startTick AND durationTicks form a chord
-    const isChord = previousStartTick !== undefined &&
-                    previousDurationTicks !== undefined &&
-                    Math.abs(layoutNote.startTick - previousStartTick) <= CHORD_TOLERANCE_TICKS &&
-                    Math.abs(layoutNote.durationTicks - previousDurationTicks) <= CHORD_TOLERANCE_TICKS;
-    
-    // Check if next note will be a chord relative to this note
-    const nextLayoutNote = i + 1 < layoutNotes.length ? layoutNotes[i + 1] : undefined;
-    const isFirstOfChord = nextLayoutNote !== undefined &&
-                           Math.abs(nextLayoutNote.startTick - layoutNote.startTick) <= CHORD_TOLERANCE_TICKS &&
-                           Math.abs(nextLayoutNote.durationTicks - layoutNote.durationTicks) <= CHORD_TOLERANCE_TICKS;
-    
-    if (isChord) {
-      // This is a chord note - mark as chord, assign same voice as first chord note, remove backupBefore
-      noteElement.chord = true;
-      noteElement.voice = chordVoice;
-      noteElement.backupBefore = undefined;
-    } else {
-      // Not a chord - add backupBefore if present
-      if (layoutNote.backupBefore !== undefined && layoutNote.backupBefore > 0) {
-        noteElement.backupBefore = Math.round(layoutNote.backupBefore);
-      }
-      // Reset chord voice for new chord
-      chordVoice = undefined;
-    }
-    
-    // Remember voice for chord members that follow
-    if (isFirstOfChord) {
-      chordVoice = noteElement.voice;
-    }
-    
-    // Remember this note's startTick and durationTicks for next iteration
-    previousStartTick = layoutNote.startTick;
-    previousDurationTicks = layoutNote.durationTicks;
-  }
-}
-
-/**
- * Apply automatic beaming to consecutive beamable notes (eighth, 16th, 32nd, 64th, 128th)
- * Groups are formed based on:
- * - Consecutive notes (not separated by chord members or non-beamable notes)
- * Note: This function is called per staff, so no staff checking needed
- * @param startBeamNumber First beam number to use (for measure-wide uniqueness)
- * @returns Next available beam number
- */
-function applyBeaming(noteElements: NoteElement[], layoutNotes: LayoutNote[], startBeamNumber: number): number {
-  // Track beam groups
-  interface BeamGroup {
-    notes: Array<{ noteElement: NoteElement; index: number }>;
-    beamLevels: number; // How many beam levels (1 for eighth, 2 for 16th, etc.)
-  }
-
-  const beamableTypes = new Set(['eighth', '16th', '32nd', '64th', '128th']);
-  const typeLevels: Record<string, number> = {
-    'eighth': 1,
-    '16th': 2,
-    '32nd': 3,
-    '64th': 4,
-    '128th': 5
-  };
-
-  let currentGroup: BeamGroup | null = null;
-  let nextBeamNumber = startBeamNumber;
-
-  for (let i = 0; i < noteElements.length; i++) {
-    const noteElement = noteElements[i];
-    const layoutNote = layoutNotes[i];
-    const isBeamable = beamableTypes.has(noteElement.type);
-    const isChord = noteElement.chord === true;
-
-    // Check if we should continue the current beam group
-    const canContinueGroup = currentGroup !== null &&
-                             isBeamable &&
-                             !isChord; // Don't beam across chord boundaries (only first chord note can beam)
-
-    if (canContinueGroup && currentGroup) {
-      // Add to current group
-      currentGroup.notes.push({ noteElement, index: i });
-      currentGroup.beamLevels = Math.max(currentGroup.beamLevels, typeLevels[noteElement.type] || 1);
-    } else {
-      // Finalize previous group
-      if (currentGroup && currentGroup.notes.length > 1) {
-        applyBeamToGroup(currentGroup, nextBeamNumber);
-        nextBeamNumber += currentGroup.beamLevels;
-      }
-
-      // Start new group if this note is beamable and not a chord member
-      if (isBeamable && !isChord) {
-        currentGroup = {
-          notes: [{ noteElement, index: i }],
-          beamLevels: typeLevels[noteElement.type] || 1
-        };
-      } else {
-        currentGroup = null;
-      }
-    }
-  }
-
-  // Finalize last group
-  if (currentGroup && currentGroup.notes.length > 1) {
-    applyBeamToGroup(currentGroup, nextBeamNumber);
-    nextBeamNumber += currentGroup.beamLevels;
-  }
-  
-  return nextBeamNumber;
-}
-
-/**
- * Apply beam elements to a group of notes
- * @param startBeamNumber First beam number for this group (levels will use consecutive numbers)
- */
-function applyBeamToGroup(group: { notes: Array<{ noteElement: NoteElement; index: number }>; beamLevels: number }, startBeamNumber: number): void {
-  const { notes, beamLevels } = group;
-  
-  for (let level = 1; level <= beamLevels; level++) {
-    for (let i = 0; i < notes.length; i++) {
-      const { noteElement } = notes[i];
-      
-      if (!noteElement.beam) {
-        noteElement.beam = [];
-      }
-
-      let beamValue: 'begin' | 'continue' | 'end';
-      
-      if (i === 0) {
-        beamValue = 'begin';
-      } else if (i === notes.length - 1) {
-        beamValue = 'end';
-      } else {
-        beamValue = 'continue';
-      }
-
-      noteElement.beam.push({
-        number: startBeamNumber + level - 1,
-        value: beamValue
-      });
-    }
-  }
-  
-  // Ensure all beamed notes have the same voice (use voice from first note)
-  const groupVoice = notes[0].noteElement.voice;
-  for (let i = 0; i < notes.length; i++) {
-    const { noteElement } = notes[i];
-    noteElement.voice = groupVoice;
-  }
-}
-

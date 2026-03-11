@@ -45,7 +45,6 @@ export interface NotationNote {
   startTick: number;      // Start position in MIDI ticks (preserved from MusicalModel)
   durationTicks: number;  // Exact duration in ticks (preserved from MusicalModel)
   voice: number;          // Voice number (1-based)
-  backupBefore?: number;  // Backup in divisions before this note
   tie?: TieInfo;
   tuplet?: TupletInfo;
   articulation?: ArticulationType;

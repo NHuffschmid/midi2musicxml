@@ -80,11 +80,11 @@ function serializeScorePartwise(score: ScorePartwise): string {
  */
 function serializePart(part: Part): string {
   let xml = `  <part id="${part.id}">\n`;
-  
+
   for (const measure of part.measures) {
     xml += serializeMeasure(measure);
   }
-  
+
   xml += `  </part>\n`;
   return xml;
 }
@@ -121,16 +121,30 @@ function serializeMeasure(measure: Measure): string {
     }
   }
 
-  // Notes (with backup elements before each note if needed)
+  // Notes (with backup elements based on startTick and timeCursor)
+  let voiceCounter = 1;
+  let timeCursor = 0;
   for (const note of measure.notes) {
-    // Write backup element before note if needed
-    if (note.backupBefore !== undefined && note.backupBefore > 0) {
-      xml += `      <backup>\n`;
-      xml += `        <duration>${note.backupBefore}</duration>\n`;
-      xml += `      </backup>\n`;
+    if (voiceCounter === 1) {
+      timeCursor = note.startTick;
     }
     
-    xml += serializeNote(note);
+    // Insert backup element only after first note
+    if (note.startTick !== undefined && timeCursor !== note.startTick) {
+      const diff = timeCursor - note.startTick;
+      xml += `      <backup>\n`;
+      xml += `        <duration>${diff}</duration>\n`;
+      xml += `      </backup>\n`;
+      timeCursor = note.startTick;
+    }
+    // Render note with overridden voice property
+    const noteWithVoice = { ...note, voice: voiceCounter };
+    xml += serializeNote(noteWithVoice);
+    // Advance timeCursor
+    if (note.duration !== undefined) {
+      timeCursor += note.duration;
+    }
+    voiceCounter++;
   }
 
   // Barline (right/middle side)
@@ -234,7 +248,7 @@ function serializeDirection(direction: Direction): string {
 
   for (const dirType of direction.directionType) {
     xml += `        <direction-type>\n`;
-    
+
     if (dirType.words) {
       let wordsXml = `          <words`;
       if (dirType.words.fontSize) {
@@ -273,11 +287,6 @@ function serializeDirection(direction: Direction): string {
 function serializeNote(note: NoteElement): string {
   let xml = `      <note>\n`;
 
-  // Chord (must come before pitch in MusicXML)
-  if (note.chord) {
-    xml += `        <chord/>\n`;
-  }
-
   // Pitch
   xml += `        <pitch>\n`;
   xml += `          <step>${note.pitch.step}</step>\n`;
@@ -305,17 +314,10 @@ function serializeNote(note: NoteElement): string {
     }
   }
 
-  // Beam
-  if (note.beam) {
-    for (const beam of note.beam) {
-      xml += `        <beam number="${beam.number}">${beam.value}</beam>\n`;
-    }
-  }
-
   // Notations
   if (note.notations) {
     xml += `        <notations>\n`;
-    
+
     if (note.notations.tied) {
       for (const tied of note.notations.tied) {
         xml += `          <tied type="${tied.type}"/>\n`;

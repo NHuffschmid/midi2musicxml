@@ -38,7 +38,6 @@ export interface MusicalNote {
   durationTicks: number;  // Duration in MIDI ticks
   velocity: number;       // MIDI velocity (0-127)
   voice: number;          // Voice number (1-based)
-  backupBefore?: number;  // Backup in ticks before this note (for voice changes)
 }
 
 export interface TimeSignature {

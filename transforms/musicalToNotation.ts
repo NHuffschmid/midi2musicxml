@@ -77,19 +77,13 @@ function convertNote(
   const pitch = midiToPitch(musicalNote.midi);
   const { type, dots } = ticksToDuration(musicalNote.durationTicks, ppq);
   
-  // Convert backupBefore from ticks to divisions (if present)
-  const backupBefore = musicalNote.backupBefore !== undefined
-    ? Math.round(musicalNote.backupBefore)
-    : undefined;
-
   return {
     pitch,
     type: type as NotationNote['type'],
     dots,
     startTick: musicalNote.startTick,      // Preserve from MusicalModel
     durationTicks: musicalNote.durationTicks,  // Preserve exact tick duration
-    voice: musicalNote.voice,
-    backupBefore
+    voice: musicalNote.voice
   };
 }
 

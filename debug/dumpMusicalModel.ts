@@ -40,7 +40,6 @@ interface NoteDump {
   midi: number;
   noteName: string;
   voice: number;
-  backupBefore?: number;
 }
 
 /**
@@ -87,7 +86,6 @@ function dumpMeasure(measure: MusicalMeasure): MeasureDump {
     midi: note.midi,
     noteName: midiToNoteName(note.midi),
     voice: note.voice,
-    backupBefore: note.backupBefore
   }));
   
   // Calculate duration (max end tick)

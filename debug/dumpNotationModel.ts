@@ -35,7 +35,6 @@ export function dumpNotationModel(score: NotationScore) {
             startTick: note.startTick,
             durationTicks: note.durationTicks,
             voice: note.voice,
-            backupBefore: note.backupBefore
           }))
         };
       })

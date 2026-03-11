@@ -113,22 +113,15 @@ export interface NoteElement {
   voice?: number;
   type: string; // quarter, eighth, etc.
   dot?: number; // Number of dots
-  chord?: boolean; // True if this note is part of a chord (shares position with previous note)
-  beam?: Beam[]; // Beaming information
   notations?: Notations;
   staff?: number;
-  backupBefore?: number; // Duration to backup before this note (for voice changes)
+  startTick: number;
 }
 
 export interface MusicXMLPitch {
   step: string;
   alter?: number;
   octave: number;
-}
-
-export interface Beam {
-  number: number; // Beam level (1 = primary, 2 = secondary, etc.)
-  value: 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook';
 }
 
 export interface Notations {
