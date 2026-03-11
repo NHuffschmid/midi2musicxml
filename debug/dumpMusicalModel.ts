@@ -39,7 +39,6 @@ interface NoteDump {
   durationTicks: number;
   midi: number;
   noteName: string;
-  voice: number;
 }
 
 /**
@@ -54,7 +53,7 @@ export function dumpMusicalModel(score: MusicalScore): MusicalModelDump {
       totalMeasures++;
       const measureDump = dumpMeasure(measure);
       totalNotes += measureDump.notes.length;
-      
+
       return measureDump;
     });
 
@@ -85,9 +84,8 @@ function dumpMeasure(measure: MusicalMeasure): MeasureDump {
     durationTicks: note.durationTicks,
     midi: note.midi,
     noteName: midiToNoteName(note.midi),
-    voice: note.voice,
   }));
-  
+
   // Calculate duration (max end tick)
   const duration = notes.length > 0
     ? Math.max(...notes.map(n => n.startTick + n.durationTicks))
@@ -95,7 +93,7 @@ function dumpMeasure(measure: MusicalMeasure): MeasureDump {
 
   return {
     number: measure.number,
-    timeSignature: measure.timeSignature 
+    timeSignature: measure.timeSignature
       ? `${measure.timeSignature.beats}/${measure.timeSignature.beatType}`
       : undefined,
     keySignature: measure.keySignature

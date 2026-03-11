@@ -20,13 +20,13 @@ export function dumpLayoutModel(score: LayoutScore) {
       staffCount: part.staffCount,
       clefs: part.clefs,
       measures: part.measures.map(measure => {
-        const allNotes = measure.staves.flatMap(staff => 
+        const allNotes = measure.staves.flatMap(staff =>
           staff.notes.map(n => ({ ...n, staffNumber: staff.number }))
         );
-        
+
         return {
           number: measure.number,
-          timeSignature: measure.timeSignature 
+          timeSignature: measure.timeSignature
             ? `${measure.timeSignature.beats}/${measure.timeSignature.beatType}`
             : undefined,
           keySignature: measure.keySignature
@@ -42,8 +42,6 @@ export function dumpLayoutModel(score: LayoutScore) {
               dots: n.dots,
               startTick: n.startTick,
               durationTicks: n.durationTicks,
-              voice: n.voice,
-              backupBefore: n.backupBefore
             }))
           })),
           totalNoteCount: allNotes.length
@@ -54,8 +52,8 @@ export function dumpLayoutModel(score: LayoutScore) {
       totalParts: score.parts.length,
       totalStaves: score.parts.reduce((sum, p) => sum + p.staffCount, 0),
       totalMeasures: score.parts.reduce((sum, p) => sum + p.measures.length, 0),
-      totalNotes: score.parts.reduce((sum, p) => 
-        sum + p.measures.reduce((s, m) => 
+      totalNotes: score.parts.reduce((sum, p) =>
+        sum + p.measures.reduce((s, m) =>
           s + m.staves.reduce((n, staff) => n + staff.notes.length, 0), 0), 0)
     }
   };

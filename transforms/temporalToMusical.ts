@@ -2,7 +2,6 @@
  * Transform: TemporalModel → MusicalModel
  * 
  * Converts time-based structure to musical semantics:
- * - Voice separation (highest notes → Voice 1)
  * - Propagate time signature, key signature, tempo metadata
  * 
  * This is the second stage that adds musical interpretation.
@@ -48,7 +47,7 @@ export function temporalToMusical(
 }
 
 /**
- * Convert temporal sections to musical measures with voice separation
+ * Convert temporal sections to musical measures
  */
 function sectionsToMeasures(
   sections: TemporalSection[],
@@ -98,7 +97,7 @@ function convertMeasure(
   ppq: number
 ): MusicalMeasure {
 
-  // Separate notes into voices
+  // TODO: Remove this!
   const notes = separateVoices(temporalMeasure.notes, ppq, section.timeSignature);
 
   return {
@@ -111,10 +110,7 @@ function convertMeasure(
   };
 }
 
-/**
- * Separate notes into voices based on temporal overlap
- * Uses a time cursor to determine when to start new voices
- */
+// TODO: Remove this
 function separateVoices(
   midiNotes: MidiNote[],
   ppq: number,
@@ -133,22 +129,11 @@ function separateVoices(
   const measureDurationTicks = (timeSignature.beats * ppq * 4) / timeSignature.beatType;
   const measureStartTick = midiNotes.length > 0 ? Math.floor(midiNotes[0].ticks / measureDurationTicks) * measureDurationTicks : 0;
 
-  // Time cursor tracking
-  let timeCursor = measureStartTick;
-  let currentVoice = 1;
-  
   const notes: MusicalNote[] = [];
 
   for (const midiNote of sortedNotes) {
     const noteStart = midiNote.ticks;
     const noteDuration = midiNote.durationTicks;
-
-    // Check if note starts before the time cursor
-    if (noteStart < timeCursor) {
-      // Need to backup and start new voice
-      currentVoice++;
-      timeCursor = noteStart;
-    }
 
     // Create the musical note
     const musicalNote: MusicalNote = {
@@ -156,13 +141,9 @@ function separateVoices(
       startTick: noteStart,
       durationTicks: noteDuration,
       velocity: midiNote.velocity,
-      voice: currentVoice
     };
     
     notes.push(musicalNote);
-
-    // Advance time cursor
-    timeCursor = noteStart + noteDuration;
   }
 
   return notes;

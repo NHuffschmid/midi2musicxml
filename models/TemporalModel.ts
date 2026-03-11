@@ -4,7 +4,7 @@
  * Represents the time-based structure of musical data:
  * - Sections (detected from pauses or markers)
  * - Measures (time-based grouping)
- * - Raw notes (no voice separation yet)
+ * - Raw notes
  * 
  * This stage focuses on:
  * - Section detection and boundaries
@@ -13,7 +13,6 @@
  * - Pause analysis between sections
  * 
  * NOT concerned with:
- * - Voice separation (that's MusicalModel)
  * - Notation details (that's NotationModel)
  * - Layout decisions (that's LayoutModel)
  */
@@ -81,7 +80,7 @@ export interface TemporalMeasure {
   /** Duration in ticks */
   durationTicks: number;
   
-  /** All notes in this measure (unsorted, no voice separation) */
+  /** All notes in this measure (unsorted) */
   notes: MidiNote[];
   
   /** First measure in a section? */

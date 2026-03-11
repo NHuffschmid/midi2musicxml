@@ -127,15 +127,6 @@ function validateMeasure(
   measure.notes.forEach((note, noteIndex) => {
     const noteLocation = `${location}.notes[${noteIndex}]`;
 
-    // Validate voice number
-    if (note.voice <= 0) {
-      errors.push({
-        severity: 'error',
-        message: `Invalid voice number: ${note.voice}`,
-        location: noteLocation
-      });
-    }
-
     // Validate duration
     if (note.durationTicks <= 0) {
       errors.push({

@@ -33,7 +33,7 @@ export interface NotationMeasure {
   timeSignature?: TimeSignature;
   keySignature?: KeySignature;
   tempo?: number;
-  notes: NotationNote[];         // Flat list of all notes with voice numbers
+  notes: NotationNote[];         // Flat list of all notes
   pedalEvents?: PedalEvent[];
   sectionStart?: boolean;
 }
@@ -44,9 +44,7 @@ export interface NotationNote {
   dots: number;           // 0, 1, 2, 3
   startTick: number;      // Start position in MIDI ticks (preserved from MusicalModel)
   durationTicks: number;  // Exact duration in ticks (preserved from MusicalModel)
-  voice: number;          // Voice number (1-based)
   tie?: TieInfo;
-  tuplet?: TupletInfo;
   articulation?: ArticulationType;
 }
 

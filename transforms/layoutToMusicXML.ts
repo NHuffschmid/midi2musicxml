@@ -34,7 +34,7 @@ export function layoutToMusicXML(
   layoutScore: LayoutScore,
   options: LayoutToMusicXMLOptions
 ): MusicXMLDocument {
-  
+
   const scorePartwise: ScorePartwise = {
     work: layoutScore.title ? { workTitle: layoutScore.title } : undefined,
     identification: createIdentification(layoutScore),
@@ -44,7 +44,7 @@ export function layoutToMusicXML(
         partName: part.name
       }))
     },
-    parts: layoutScore.parts.map(part => 
+    parts: layoutScore.parts.map(part =>
       convertPart(part, options.divisions)
     )
   };
@@ -75,8 +75,8 @@ function convertPart(
   layoutPart: LayoutPart,
   divisions: number
 ): Part {
-  
-  const measures = layoutPart.measures.map((measure, index) => 
+
+  const measures = layoutPart.measures.map((measure, index) =>
     convertMeasure(measure, layoutPart.clefs, layoutPart.staffCount, divisions, index === 0)
   );
 
@@ -96,12 +96,12 @@ function convertMeasure(
   divisions: number,
   isFirstMeasure: boolean
 ): Measure {
-  
+
   // Attributes (in first measure or when key/time signature changes)
   const hasKeySignature = layoutMeasure.keySignature !== undefined;
   const hasTimeSignature = layoutMeasure.timeSignature !== undefined;
   const needsAttributes = isFirstMeasure || hasKeySignature || hasTimeSignature;
-  
+
   let attributes: Attributes | undefined;
   if (needsAttributes) {
     attributes = {
@@ -148,7 +148,7 @@ function convertMeasure(
 
   for (const staff of layoutMeasure.staves) {
     // Convert notes for this staff
-    const staffNotes: NoteElement[] = staff.notes.map(note => 
+    const staffNotes: NoteElement[] = staff.notes.map(note =>
       convertNote(note, divisions, staffCount)
     );
 
@@ -162,26 +162,20 @@ function convertMeasure(
     }
   }
 
-  // Sort notes by startTick (primary) and voice (secondary) to restore temporal order
+  // Sort notes by startTick to restore temporal order
   allNotes.sort((a, b) => {
-    if (a.layoutNote.startTick !== b.layoutNote.startTick) {
-      return a.layoutNote.startTick - b.layoutNote.startTick;
-    }
-    // Secondary sort by voice (if present)
-    const voiceA = a.noteElement.voice || 0;
-    const voiceB = b.noteElement.voice || 0;
-    return voiceA - voiceB;
+    return a.layoutNote.startTick - b.layoutNote.startTick;
   });
 
   // Render notes with backup elements
-    const notes: NoteElement[] = [];
-    for (const { noteElement, layoutNote, staffNumber } of allNotes) {
-      notes.push({
-        ...noteElement,
-        staff: staffCount > 1 ? staffNumber : undefined,
-        startTick: layoutNote.startTick
-      });
-    }
+  const notes: NoteElement[] = [];
+  for (const { noteElement, layoutNote, staffNumber } of allNotes) {
+    notes.push({
+      ...noteElement,
+      staff: staffCount > 1 ? staffNumber : undefined,
+      startTick: layoutNote.startTick
+    });
+  }
 
   // Add print element for section start
   const print = layoutMeasure.sectionStart ? { newSystem: true } : undefined;
@@ -208,7 +202,7 @@ function convertNote(
   divisions: number,
   totalStaves: number
 ): NoteElement {
-  
+
   // Use exact durationTicks instead of re-calculating from type/dots to avoid quantization errors
   const duration = Math.round(note.durationTicks);
 
@@ -224,7 +218,6 @@ function convertNote(
       octave: note.pitch.octave
     } as import('../models/MusicXMLModel').MusicXMLPitch,
     duration,
-    voice: note.voice,
     type: note.type,
     dot: note.dots > 0 ? note.dots : undefined,
     notations,

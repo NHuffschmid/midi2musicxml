@@ -3,7 +3,7 @@
  * 
  * Represents musical semantics after MIDI processing:
  * - Measures with time signatures and key signatures
- * - Notes with voice assignments
+ * - Notes
  * - Tempo information
  * 
  * No notation decisions yet (note types, durations, etc.)
@@ -27,7 +27,7 @@ export interface MusicalMeasure {
   timeSignature?: TimeSignature; // Only set if it changes
   keySignature?: KeySignature;   // Only set if it changes
   tempo?: number;                 // Only set if it changes (BPM)
-  notes: MusicalNote[];          // Flat list of all notes with voice numbers
+  notes: MusicalNote[];          // Flat list of all notes
   pedalEvents?: PedalEvent[];     // Sustain pedal events
   sectionStart?: boolean;         // True if this measure starts a new section
 }
@@ -37,7 +37,6 @@ export interface MusicalNote {
   startTick: number;      // Start position in MIDI ticks
   durationTicks: number;  // Duration in MIDI ticks
   velocity: number;       // MIDI velocity (0-127)
-  voice: number;          // Voice number (1-based)
 }
 
 export interface TimeSignature {

@@ -83,7 +83,6 @@ function convertNote(
     dots,
     startTick: musicalNote.startTick,      // Preserve from MusicalModel
     durationTicks: musicalNote.durationTicks,  // Preserve exact tick duration
-    voice: musicalNote.voice
   };
 }
 

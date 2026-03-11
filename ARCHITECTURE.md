@@ -41,10 +41,8 @@ Stage 7: XML String
 ### Stage 3: MusicalModel
 - **Purpose**: Musical semantics and structure
 - **Responsibilities**:
-  - Voice separation using time-cursor algorithm
-  - Calculate backup values for voice changes
   - Propagate metadata (time/key signature, tempo) from TemporalModel
-- **Key Feature**: Each note has a voice number and optional backup value
+- **Key Feature**: Is there any???
 - **File**: `models/MusicalModel.ts`
 - **Transform**: `transforms/temporalToMusical.ts`
 
@@ -128,41 +126,6 @@ midi2musicxml/
 └── index.ts             # Main entry point
 ```
 
-## Voice Separation Strategy
-
-The pipeline uses a **time-cursor-based voice separation** approach in **Stage 3 (MusicalModel)**:
-
-### Algorithm
-
-1. **Initialize**: At the beginning of each measure, set voice = 1 and timeCursor = measureStart
-2. **Sort notes**: Process notes in temporal order (by startTick)
-3. **For each note**:
-   - If `note.startTick >= timeCursor`: Continue in current voice
-   - If `note.startTick < timeCursor`: 
-     - Increment voice number
-     - Calculate `backupBefore = timeCursor - note.startTick`
-     - Reset `timeCursor = note.startTick`
-   - Assign voice number to note
-   - Advance `timeCursor += note.durationTicks`
-4. **Reset**: Each measure starts fresh with voice = 1
-
-### Example
-
-```
-Input notes (in ticks):
-  Note A: start=0,   duration=480 (quarter note)
-  Note B: start=240, duration=240 (starts during A - overlap!)
-  Note C: start=480, duration=480 (after A ends)
-
-Processing:
-  - Note A: timeCursor=0, A.start=0 >= 0 → voice=1, timeCursor → 480
-  - Note B: timeCursor=480, B.start=240 < 480 → voice=2, backup=240, timeCursor → 480
-  - Note C: timeCursor=480, C.start=480 >= 480 → voice=2, timeCursor → 960
-
-Result:
-  Voice 1: [Note A]
-  Voice 2: [Note B (backup=240), Note C]
-```
 
 ### Key Features
 
