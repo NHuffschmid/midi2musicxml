@@ -113,6 +113,7 @@ export interface NoteElement {
   voice?: number;
   type: string; // quarter, eighth, etc.
   dot?: number; // Number of dots
+  chord?: boolean; // True if this note is part of a chord (not the first note)
   notations?: Notations;
   staff?: number;
   startTick: number;

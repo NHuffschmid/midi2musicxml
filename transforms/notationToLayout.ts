@@ -67,6 +67,49 @@ function convertPart(
 }
 
 /**
+ * Detect chords within a staff.
+ * 
+ * Two notes form a chord if:
+ * 1. They start at (almost) the same time (within tolerance)
+ * 2. They have the same note type (quarter, eighth, etc.)
+ * 3. They have the same number of dots
+ * 
+ * @param notes - Notes of a staff
+ * @param startTickTolerance - Maximum deviation for simultaneous start (default: 10 ticks)
+ */
+function detectChordsInStaff(
+  notes: LayoutNote[],
+  startTickTolerance: number = 10
+): LayoutNote[] {
+  if (notes.length === 0) return notes;
+
+  // Sort by startTick, then by pitch (bass to treble)
+  notes.sort((a, b) => {
+    if (Math.abs(a.startTick - b.startTick) > startTickTolerance) {
+      return a.startTick - b.startTick;
+    }
+    return pitchToMidi(a.pitch) - pitchToMidi(b.pitch); // Lowest note first
+  });
+
+  // Mark chord notes
+  for (let i = 1; i < notes.length; i++) {
+    const prev = notes[i - 1];
+    const curr = notes[i];
+
+    // Check if curr is a chord with prev
+    const sameStartTime = Math.abs(curr.startTick - prev.startTick) <= startTickTolerance;
+    const sameNoteType = curr.type === prev.type;
+    const sameDots = (curr.dots ?? 0) === (prev.dots ?? 0);
+
+    if (sameStartTime && sameNoteType && sameDots) {
+      curr.isChord = true;
+    }
+  }
+
+  return notes;
+}
+
+/**
  * Convert piano part (2 staves)
  */
 function convertPianoPartToLayout(
@@ -100,6 +143,10 @@ function convertPianoPartToLayout(
       }
     }
     
+    // Detect chords within each staff
+    const staff1NotesWithChords = detectChordsInStaff(staff1Notes);
+    const staff2NotesWithChords = detectChordsInStaff(staff2Notes);
+
     return {
       number: notationMeasure.number,
       timeSignature: notationMeasure.timeSignature,
@@ -107,8 +154,8 @@ function convertPianoPartToLayout(
       tempo: notationMeasure.tempo,
       sectionStart: notationMeasure.sectionStart,
       staves: [
-        { number: 1, notes: staff1Notes },
-        { number: 2, notes: staff2Notes }
+        { number: 1, notes: staff1NotesWithChords },
+        { number: 2, notes: staff2NotesWithChords }
       ],
       pedalEvents: notationMeasure.pedalEvents
     };
@@ -157,6 +204,10 @@ function convertMeasureForSingleStaff(
   staffNumber: number
 ): LayoutMeasure {
   
+  // Convert and detect chords
+  const staffNotes = notationMeasure.notes.map(note => ({ ...note } as LayoutNote));
+  const staffNotesWithChords = detectChordsInStaff(staffNotes);
+
   return {
     number: notationMeasure.number,
     timeSignature: notationMeasure.timeSignature,
@@ -166,7 +217,7 @@ function convertMeasureForSingleStaff(
     staves: [
       {
         number: staffNumber,
-        notes: notationMeasure.notes.map(note => ({ ...note } as LayoutNote))
+        notes: staffNotesWithChords
       }
     ],
     pedalEvents: notationMeasure.pedalEvents

@@ -220,6 +220,7 @@ function convertNote(
     duration,
     type: note.type,
     dot: note.dots > 0 ? note.dots : undefined,
+    chord: note.isChord || undefined, // Set chord flag if this is a chord note
     notations,
     startTick: note.startTick
     // Note: staff property is added later in convertMeasure after sorting

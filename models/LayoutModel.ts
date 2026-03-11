@@ -44,6 +44,7 @@ export interface LayoutStaff {
 
 export interface LayoutNote extends NotationNote {
   // Note: staffNumber removed - staff is determined by parent LayoutStaff
+  isChord?: boolean;             // True if this note is part of a chord (not the first note)
 }
 
 export type ClefType = 'G' | 'F' | 'C' | 'percussion' | 'TAB';

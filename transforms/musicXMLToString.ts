@@ -124,12 +124,16 @@ function serializeMeasure(measure: Measure): string {
   // Notes (with backup elements based on startTick and timeCursor)
   let voiceCounter = 1;
   let timeCursor = 0;
-  for (const note of measure.notes) {
-    if (voiceCounter === 1) {
+  let currentVoice = 1;
+  
+  for (let i = 0; i < measure.notes.length; i++) {
+    const note = measure.notes[i];
+    
+    if (i === 0) {
       timeCursor = note.startTick;
     }
     
-    // Insert backup element only after first note
+    // Insert backup element if needed
     if (note.startTick !== undefined && timeCursor !== note.startTick) {
       const diff = timeCursor - note.startTick;
       xml += `      <backup>\n`;
@@ -137,14 +141,25 @@ function serializeMeasure(measure: Measure): string {
       xml += `      </backup>\n`;
       timeCursor = note.startTick;
     }
-    // Render note with overridden voice property
-    const noteWithVoice = { ...note, voice: voiceCounter };
+    
+    // Voice assignment for chords
+    if (note.chord) {
+      // Chord note: use same voice as previous note
+      currentVoice = voiceCounter;
+    } else {
+      // Not a chord: increment voice counter for new note
+      voiceCounter++;
+      currentVoice = voiceCounter;
+    }
+    
+    // Render note with assigned voice
+    const noteWithVoice = { ...note, voice: currentVoice };
     xml += serializeNote(noteWithVoice);
-    // Advance timeCursor
-    if (note.duration !== undefined) {
+    
+    // Advance timeCursor (only for non-chord notes or first chord note)
+    if (!note.chord && note.duration !== undefined) {
       timeCursor += note.duration;
     }
-    voiceCounter++;
   }
 
   // Barline (right/middle side)
@@ -286,6 +301,11 @@ function serializeDirection(direction: Direction): string {
  */
 function serializeNote(note: NoteElement): string {
   let xml = `      <note>\n`;
+
+  // Chord element MUST come before pitch!
+  if (note.chord) {
+    xml += `        <chord/>\n`;
+  }
 
   // Pitch
   xml += `        <pitch>\n`;

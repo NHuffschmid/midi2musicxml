@@ -52,9 +52,14 @@ Stage 6: XML String
 - **Purpose**: Physical layout decisions
 - **Responsibilities**:
   - Assign notes to staves (grouped by staff)
+  - **Detect chords** (notes with same start time and note type)
   - Set clef types (G, F, C)
   - System breaks (section starts)
   - Page breaks (future)
+- **Key Features**:
+  - Chord detection: Notes are grouped as chords if they have the same `startTick` (within 10 tick tolerance), same `type`, and same `dots`
+  - Chord notes are sorted from lowest to highest pitch (bass to treble)
+  - First note of a chord has no `isChord` flag, subsequent notes have `isChord: true`
 - **Structure**:
   - `LayoutMeasure` contains `staves: LayoutStaff[]` (notes grouped by staff)
   - Each `LayoutStaff` has `number` and `notes: LayoutNote[]`
@@ -146,9 +151,16 @@ This allows the pipeline to handle multi-movement pieces or compositions with di
 Voices are only created when overlap occurs. A simple melody uses one voice, complex polyphony uses multiple voices.
 
 ### 3. Staff Assignment by Pitch
-For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 to bass clef.
+For piano: The average pitch of all notes in a measure is calculated (clamped to MIDI 52-66 range). Notes >= average go to treble clef, < average to bass clef.
 
-### 4. Rests Not Yet Implemented
+### 4. Chord Detection by Note Type
+Chords are detected in **Stage 4 (LayoutModel)** within each staff independently:
+- **Criteria**: Two notes form a chord if they have the same `startTick` (±10 tick tolerance), same `type` (quarter, eighth, etc.), and same `dots`
+- **Tolerance**: Uses note type instead of exact duration ticks to handle manually played MIDI files
+- **Sorting**: Chord notes are sorted from lowest to highest pitch (bass to treble)
+- **MusicXML**: First note is rendered normally, subsequent notes get `<chord/>` element and share the same voice
+
+### 5. Rests Not Yet Implemented
 The current pipeline does NOT handle:
 - **Rests**: Gaps between notes are not filled with rest symbols
 
