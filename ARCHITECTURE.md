@@ -2,7 +2,7 @@
 
 ## Overview
 
-This module converts MIDI files to MusicXML format using a **7-stage pipeline architecture**. Each stage transforms the data through increasingly refined models, making the conversion process modular, testable, and maintainable.
+This module converts MIDI files to MusicXML format using a **6-stage pipeline architecture**. Each stage transforms the data through increasingly refined models, making the conversion process modular, testable, and maintainable.
 
 ## Pipeline Stages
 
@@ -11,15 +11,13 @@ MIDI (tonejs)
     ↓
 Stage 2: TemporalModel
     ↓
-Stage 3: MusicalModel
+Stage 3: NotationModel
     ↓
-Stage 4: NotationModel
+Stage 4: LayoutModel
     ↓
-Stage 5: LayoutModel
+Stage 5: MusicXMLModel
     ↓
-Stage 6: MusicXMLModel
-    ↓
-Stage 7: XML String
+Stage 6: XML String
 ```
 
 ### Stage 1: MIDI Data (Input)
@@ -34,29 +32,23 @@ Stage 7: XML String
   - Detect sections based on pauses between measures
   - Extract time signature, key signature, tempo for each section
   - Preserve measure boundaries and timing information
+  - Define common types: `TimeSignature`, `KeySignature`, `PedalEvent`
 - **Key Feature**: Focuses purely on temporal/rhythmic structure, no musical interpretation yet
 - **File**: `models/TemporalModel.ts`
 - **Transform**: `transforms/midiToTemporal.ts`
 
-### Stage 3: MusicalModel
-- **Purpose**: Musical semantics and structure
-- **Responsibilities**:
-  - Propagate metadata (time/key signature, tempo) from TemporalModel
-- **Key Feature**: Is there any???
-- **File**: `models/MusicalModel.ts`
-- **Transform**: `transforms/temporalToMusical.ts`
-
-### Stage 4: NotationModel
+### Stage 3: NotationModel
 - **Purpose**: Notation-specific decisions
 - **Responsibilities**:
   - Convert MIDI ticks to concrete note values (quarter, eighth, etc.)
   - Convert MIDI numbers to pitches (step, alter, octave)
+  - Propagate metadata (time/key signature, tempo) from TemporalModel
   - Beaming information (future)
   - Tuplets recognition (future)
 - **File**: `models/NotationModel.ts`
-- **Transform**: `transforms/musicalToNotation.ts`
+- **Transform**: `transforms/temporalToNotation.ts`
 
-### Stage 5: LayoutModel
+### Stage 4: LayoutModel
 - **Purpose**: Physical layout decisions
 - **Responsibilities**:
   - Assign notes to staves (grouped by staff)
@@ -70,7 +62,7 @@ Stage 7: XML String
 - **File**: `models/LayoutModel.ts`
 - **Transform**: `transforms/notationToLayout.ts`
 
-### Stage 6: MusicXMLModel
+### Stage 5: MusicXMLModel
 - **Purpose**: MusicXML DOM structure
 - **Responsibilities**:
   - 1:1 mapping to MusicXML elements
@@ -79,7 +71,7 @@ Stage 7: XML String
 - **File**: `models/MusicXMLModel.ts`
 - **Transform**: `transforms/layoutToMusicXML.ts`
 
-### Stage 7: XML String (Output)
+### Stage 6: XML String (Output)
 - **Purpose**: Serialized MusicXML
 - **Responsibilities**:
   - Convert MusicXML DOM to XML string
@@ -92,15 +84,13 @@ Stage 7: XML String
 midi2musicxml/
 ├── models/              # Type definitions for each pipeline stage
 │   ├── TemporalModel.ts
-│   ├── MusicalModel.ts
 │   ├── NotationModel.ts
 │   ├── LayoutModel.ts
 │   ├── MusicXMLModel.ts
-│   └── index.ts
+│   ─── index.ts
 ├── transforms/          # Transformation functions between stages
 │   ├── midiToTemporal.ts
-│   ├── temporalToMusical.ts
-│   ├── musicalToNotation.ts
+│   ├── temporalToNotation.ts
 │   ├── notationToLayout.ts
 │   ├── layoutToMusicXML.ts
 │   ├── musicXMLToString.ts
@@ -117,7 +107,6 @@ midi2musicxml/
 │   └── midiTicksToXmlDurationType.ts
 ├── debug/               # Debug and testing utilities
 │   ├── dumpTemporalModel.ts
-│   ├── dumpMusicalModel.ts
 │   ├── dumpNotationModel.ts
 │   ├── dumpLayoutModel.ts
 │   ├── dumpMusicXMLModel.ts
@@ -148,19 +137,18 @@ This allows the pipeline to handle multi-movement pieces or compositions with di
 
 ## Key Design Decisions
 
-### 1. Separation of Temporal and Musical Concerns
-**Stage 2 (TemporalModel)** focuses purely on time-based structure (measures, sections), while **Stage 3 (MusicalModel)** handles musical interpretation (voices). This separation makes the pipeline more maintainable and testable.
+## Key Design Decisions
 
-### 2. Voice Structure is Immutable
-Once voices are separated in **Stage 3**, they remain unchanged through all subsequent stages. This ensures consistency and simplifies debugging.
+### 1. Direct Temporal to Notation Conversion
+**Stage 2 (TemporalModel)** provides time-based structure and common types (`TimeSignature`, `KeySignature`, `PedalEvent`), which are directly consumed by **Stage 3 (NotationModel)**. This eliminates an unnecessary intermediate layer and simplifies the pipeline.
 
-### 3. Minimal Voices
+### 2. Minimal Voices
 Voices are only created when overlap occurs. A simple melody uses one voice, complex polyphony uses multiple voices.
 
-### 4. Staff Assignment by Pitch
+### 3. Staff Assignment by Pitch
 For piano: C4 (MIDI 60) is the split point. Notes >= C4 go to treble clef, < C4 to bass clef.
 
-### 8. Rests Not Yet Implemented
+### 4. Rests Not Yet Implemented
 The current pipeline does NOT handle:
 - **Rests**: Gaps between notes are not filled with rest symbols
 
@@ -171,20 +159,18 @@ This feature will be implemented in a future iteration of the pipeline.
 ### Example: Adding Pedal Support
 
 1. **Stage 2 (TemporalModel)**: Detect pedal events from MIDI control changes
-2. **Stage 3 (MusicalModel)**: Add `pedalEvents: PedalEvent[]` to measures
-3. **Stage 4 (NotationModel)**: Pass through unchanged
-4. **Stage 5 (LayoutModel)**: Pass through unchanged
-5. **Stage 6 (MusicXMLModel)**: Add `Direction` elements with `<pedal>` tags
-6. **Stage 7**: Serialize pedal directions
+2. **Stage 3 (NotationModel)**: Pass through `pedalEvents` unchanged
+3. **Stage 4 (LayoutModel)**: Pass through unchanged
+4. **Stage 5 (MusicXMLModel)**: Add `Direction` elements with `<pedal>` tags
+5. **Stage 6**: Serialize pedal directions
 
 ### Example: Adding Dynamics
 
 1. **Stage 2**: Analyze MIDI velocity patterns across measures
 2. **Stage 3**: Determine dynamics (p, mf, f, etc.) and add `DynamicMarking` to measures
 3. **Stage 4**: Pass through
-4. **Stage 5**: Pass through
-5. **Stage 6**: Add `Direction` elements with `<dynamics>` tags
-6. **Stage 7**: Serialize dynamics
+4. **Stage 5**: Add `Direction` elements with `<dynamics>` tags
+5. **Stage 6**: Serialize dynamics
 
 ## Testing Strategy
 
@@ -192,12 +178,12 @@ Each stage can be tested independently:
 
 ```typescript
 // Test Stage 2
-const musicalModel = midiToMusical(sections, options);
-expect(musicalModel.parts[0].measures[0].voices).toHaveLength(2);
+const temporalScore = midiToTemporal(midiNotes, midi, options);
+expect(temporalScore.sections).toBeDefined();
 
 // Test Stage 3
-const notationModel = musicalToNotation(musicalModel, options);
-expect(notationModel.parts[0].measures[0].voices[0].notes[0].pitch).toBeDefined();
+const notationScore = temporalToNotation(temporalScore, options);
+expect(notationScore.parts[0].measures[0].notes[0].pitch).toBeDefined();
 
 // Test full pipeline
 const xml = midi2MusicXML(midi, { clef: 'piano' });
@@ -234,7 +220,7 @@ MIDI → MidiNote[] → MidiMeasure[] → Direct XML Rendering
 
 ### New Structure
 ```
-MIDI → MusicalModel → NotationModel → LayoutModel → MusicXMLModel → XML
+MIDI → TemporalModel → NotationModel → LayoutModel → MusicXMLModel → XML
 ```
 
 ### Benefits
@@ -248,7 +234,7 @@ MIDI → MusicalModel → NotationModel → LayoutModel → MusicXMLModel → XM
 
 The pipeline adds minimal overhead:
 - Each stage is O(n) where n = number of notes
-- Total complexity: O(5n) ≈ O(n)
+- Total complexity: O(4n) ≈ O(n)
 - Intermediate models are lightweight
 - Memory usage is acceptable for typical MIDI files (<10k notes)
 

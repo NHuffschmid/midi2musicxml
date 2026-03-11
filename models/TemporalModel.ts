@@ -19,11 +19,29 @@
 
 import type { MidiNote } from '../types';
 
-// Import shared types from MusicalModel
-import type { TimeSignature, KeySignature } from './MusicalModel';
+/**
+ * Time signature (e.g., 4/4, 3/4)
+ */
+export interface TimeSignature {
+  beats: number;          // Numerator (e.g., 4 in 4/4)
+  beatType: number;       // Denominator (e.g., 4 in 4/4)
+}
 
-// Re-export for convenience
-export type { TimeSignature, KeySignature } from './MusicalModel';
+/**
+ * Key signature
+ */
+export interface KeySignature {
+  fifths: number;         // -7 to +7 (flats to sharps)
+  mode: 'major' | 'minor';
+}
+
+/**
+ * Pedal event (sustain pedal)
+ */
+export interface PedalEvent {
+  tick: number;
+  type: 'down' | 'up';
+}
 
 /**
  * Top-level temporal structure

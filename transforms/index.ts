@@ -3,8 +3,7 @@
  */
 
 export * from './midiToTemporal';
-export * from './temporalToMusical';
-export * from './musicalToNotation';
+export * from './temporalToNotation';
 export * from './notationToLayout';
 export * from './layoutToMusicXML';
 export * from './musicXMLToString';

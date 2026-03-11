@@ -3,7 +3,6 @@
  */
 
 export * from './dumpTemporalModel';
-export * from './dumpMusicalModel';
 export * from './dumpNotationModel';
 export * from './dumpLayoutModel';
 export * from './dumpMusicXMLModel';

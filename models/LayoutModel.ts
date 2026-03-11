@@ -10,7 +10,7 @@
  */
 
 import { NotationNote } from './NotationModel';
-import { TimeSignature, KeySignature, PedalEvent } from './MusicalModel';
+import { TimeSignature, KeySignature, PedalEvent } from './TemporalModel';
 
 export interface LayoutScore {
   title?: string;

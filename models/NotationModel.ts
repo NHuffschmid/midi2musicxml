@@ -9,11 +9,11 @@
  * Still abstract - not yet concerned with MusicXML specifics
  */
 
-// Import shared types from MusicalModel
-import type { TimeSignature, KeySignature, PedalEvent } from './MusicalModel';
+// Import shared types from TemporalModel
+import type { TimeSignature, KeySignature, PedalEvent } from './TemporalModel';
 
 // Re-export for convenience
-export type { TimeSignature, KeySignature, PedalEvent } from './MusicalModel';
+export type { TimeSignature, KeySignature, PedalEvent } from './TemporalModel';
 
 export interface NotationScore {
   title?: string;
