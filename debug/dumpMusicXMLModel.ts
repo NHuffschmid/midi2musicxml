@@ -36,9 +36,12 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
               alter: note.pitch.alter,
               octave: note.pitch.octave
             },
+            startTick: note.startTick,
             duration: note.duration,
+            voice: note.voice,
             type: note.type,
             dot: note.dot,
+            chord: note.chord,
             staff: note.staff,
             notations: note.notations ? {
               tied: note.notations.tied?.map(t => t.type),
