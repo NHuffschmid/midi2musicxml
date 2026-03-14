@@ -40,6 +40,7 @@ export function dumpLayoutModel(score: LayoutScore) {
               pitch: `${n.pitch.step}${n.pitch.alter ? (n.pitch.alter > 0 ? '#' : 'b') : ''}${n.pitch.octave}`,
               type: n.type,
               dots: n.dots,
+              chord: n.isChord,
               startTick: n.startTick,
               durationTicks: n.durationTicks,
             }))
