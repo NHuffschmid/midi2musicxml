@@ -43,8 +43,6 @@ Stage 6: XML String
   - Convert MIDI ticks to concrete note values (quarter, eighth, etc.)
   - Convert MIDI numbers to pitches (step, alter, octave)
   - Propagate metadata (time/key signature, tempo) from TemporalModel
-  - Beaming information (future)
-  - Tuplets recognition (future)
 - **File**: `models/NotationModel.ts`
 - **Transform**: `transforms/temporalToNotation.ts`
 
@@ -71,8 +69,12 @@ Stage 6: XML String
 - **Purpose**: MusicXML DOM structure
 - **Responsibilities**:
   - 1:1 mapping to MusicXML elements
-  - Ready for serialization
-  - During XML serialization, `<backup>` elements are written before notes as needed
+  - **Beam computation** (`computeBeamsForNotes`): calculates beam groups per staff based on beat boundaries and time signature. Consecutive beamable notes (eighth, 16th, 32nd, 64th) within the same beat are grouped with `begin` / `continue` / `end` markers. Compound time (6/8, 9/8, 12/8) uses dotted-quarter as beam group unit.
+  - Notes carry `startTick` for later backup/forward calculation
+  - Chord flag (`chord`) is transferred from `LayoutNote.isChord`
+- **Key model types**:
+  - `NoteElement`: `pitch`, `duration`, `type`, `voice?`, `dot?`, `chord?`, `staff?`, `beam?`, `startTick`, `notations?`
+  - `Beam`: `{ number?: number; type: 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook' }`
 - **File**: `models/MusicXMLModel.ts`
 - **Transform**: `transforms/layoutToMusicXML.ts`
 
@@ -80,8 +82,42 @@ Stage 6: XML String
 - **Purpose**: Serialized MusicXML
 - **Responsibilities**:
   - Convert MusicXML DOM to XML string
+  - **Measure preprocessing** via `measurePreprocessor.ts` (see below)
   - Proper formatting and indentation
 - **Transform**: `transforms/musicXMLToString.ts`
+
+## Measure Preprocessing (Stage 6 helper)
+
+Before serialization, each measure's note list passes through a four-step pipeline in `transforms/measurePreprocessor.ts`:
+
+```
+NoteElement[]
+      │
+      ▼
+Step 1 – resolveChords()
+      Marks chord notes (chord = true), unifies voice per tick+staff group.
+      │
+      ▼
+Step 2 – resolveBeams()
+      Ensures all notes in a beam group (begin→continue→end) share the
+      voice of the first note in that group.
+      │
+      ▼
+Step 3 – assignVoices()
+      Maps staff numbers to final consecutive voice numbers (staff 1 → voice 1,
+      staff 2 → voice 2, …). Chord notes inherit voice from their primary note.
+      │
+      ▼
+Step 4 – buildMeasureEvents()
+      Sorts notes by voice, then by startTick within each voice.
+      Inserts <backup> (cursor jump back) or <forward> (cursor jump ahead)
+      events wherever the time cursor must move between notes.
+      │
+      ▼
+MeasureEvent[]  ({ kind: 'note' } | { kind: 'backup' } | { kind: 'forward' })
+```
+
+Each step is a pure function and can be unit-tested independently.
 
 ## Directory Structure
 
@@ -92,12 +128,13 @@ midi2musicxml/
 │   ├── NotationModel.ts
 │   ├── LayoutModel.ts
 │   ├── MusicXMLModel.ts
-│   ─── index.ts
+│   └── index.ts
 ├── transforms/          # Transformation functions between stages
 │   ├── midiToTemporal.ts
 │   ├── temporalToNotation.ts
 │   ├── notationToLayout.ts
-│   ├── layoutToMusicXML.ts
+│   ├── layoutToMusicXML.ts    ← includes computeBeamsForNotes()
+│   ├── measurePreprocessor.ts ← chord/beam/voice resolution + backup/forward
 │   ├── musicXMLToString.ts
 │   └── index.ts
 ├── analysis/            # MIDI analysis utilities
@@ -113,22 +150,12 @@ midi2musicxml/
 ├── debug/               # Debug and testing utilities
 │   ├── dumpTemporalModel.ts
 │   ├── dumpNotationModel.ts
-│   ├── dumpLayoutModel.ts
-│   ├── dumpMusicXMLModel.ts
+│   ├── dumpLayoutModel.ts    ← outputs chord (isChord) per note
+│   ├── dumpMusicXMLModel.ts  ← outputs startTick, voice, chord, beam per note
 │   └── index.ts
 ├── types.ts             # Common types and interfaces
 └── index.ts             # Main entry point
 ```
-
-
-### Key Features
-
-- **Temporal ordering**: Ensures notes appear in correct chronological sequence in MusicXML
-- **Automatic backup**: When a note starts before current time cursor, a backup element is generated
-- **Per-measure reset**: Voice numbering starts fresh at each measure boundary
-- **Simple and predictable**: No complex overlap detection needed
-
-**Note**: Rests and chords are NOT handled in this redesigned pipeline. These features will be added later.
 
 ## Section Detection
 
@@ -142,116 +169,31 @@ This allows the pipeline to handle multi-movement pieces or compositions with di
 
 ## Key Design Decisions
 
-## Key Design Decisions
-
 ### 1. Direct Temporal to Notation Conversion
 **Stage 2 (TemporalModel)** provides time-based structure and common types (`TimeSignature`, `KeySignature`, `PedalEvent`), which are directly consumed by **Stage 3 (NotationModel)**. This eliminates an unnecessary intermediate layer and simplifies the pipeline.
 
-### 2. Minimal Voices
-Voices are only created when overlap occurs. A simple melody uses one voice, complex polyphony uses multiple voices.
+### 2. Voice Assignment in Stage 6 (not Stage 5)
+Voices are derived from staff numbers in `assignVoices()` (Step 3 of the measure preprocessor), not stored in the MusicXMLModel. This keeps Stage 5 free of layout concerns. Rule: staff 1 → voice 1, staff 2 → voice 2, etc. Chord notes inherit the voice of their primary tone.
 
 ### 3. Staff Assignment by Pitch
-For piano: The average pitch of all notes in a measure is calculated (clamped to MIDI 52-66 range). Notes >= average go to treble clef, < average to bass clef.
+For piano: The average pitch of all notes in a measure is calculated (clamped to MIDI 52–66 range). Notes >= average go to treble clef, < average to bass clef.
 
-### 4. Chord Detection by Note Type
+### 4. Chord Detection by Note Type (Stage 4)
 Chords are detected in **Stage 4 (LayoutModel)** within each staff independently:
 - **Criteria**: Two notes form a chord if they have the same `startTick` (±10 tick tolerance), same `type` (quarter, eighth, etc.), and same `dots`
-- **Tolerance**: Uses note type instead of exact duration ticks to handle manually played MIDI files
 - **Sorting**: Chord notes are sorted from lowest to highest pitch (bass to treble)
 - **MusicXML**: First note is rendered normally, subsequent notes get `<chord/>` element and share the same voice
 
-### 5. Rests Not Yet Implemented
+### 5. Beam Computation in Stage 5 (layoutToMusicXML)
+Beams are calculated in `computeBeamsForNotes()` per staff immediately after note conversion, before staves are merged. This ensures chord notes and primary notes within the same staff are correctly grouped. The function:
+- Groups consecutive beamable primary notes within the same beat boundary
+- Sets `beam: [{ number: 1, type: 'begin'|'continue'|'end' }]` on each note
+- Propagates the beam marker to chord notes following their primary
+
+### 6. Backup/Forward in Stage 6 (measurePreprocessor)
+`<backup>` and `<forward>` elements are not stored in MusicXMLModel — they are computed dynamically by `buildMeasureEvents()` (Step 4). The time cursor advances with each non-chord note's `duration`. A jump back (new voice starting earlier) produces `<backup>`, a gap produces `<forward>`.
+
+### 7. Rests Not Yet Implemented
 The current pipeline does NOT handle:
 - **Rests**: Gaps between notes are not filled with rest symbols
 
-This feature will be implemented in a future iteration of the pipeline.
-
-## Adding New Features
-
-### Example: Adding Pedal Support
-
-1. **Stage 2 (TemporalModel)**: Detect pedal events from MIDI control changes
-2. **Stage 3 (NotationModel)**: Pass through `pedalEvents` unchanged
-3. **Stage 4 (LayoutModel)**: Pass through unchanged
-4. **Stage 5 (MusicXMLModel)**: Add `Direction` elements with `<pedal>` tags
-5. **Stage 6**: Serialize pedal directions
-
-### Example: Adding Dynamics
-
-1. **Stage 2**: Analyze MIDI velocity patterns across measures
-2. **Stage 3**: Determine dynamics (p, mf, f, etc.) and add `DynamicMarking` to measures
-3. **Stage 4**: Pass through
-4. **Stage 5**: Add `Direction` elements with `<dynamics>` tags
-5. **Stage 6**: Serialize dynamics
-
-## Testing Strategy
-
-Each stage can be tested independently:
-
-```typescript
-// Test Stage 2
-const temporalScore = midiToTemporal(midiNotes, midi, options);
-expect(temporalScore.sections).toBeDefined();
-
-// Test Stage 3
-const notationScore = temporalToNotation(temporalScore, options);
-expect(notationScore.parts[0].measures[0].notes[0].pitch).toBeDefined();
-
-// Test full pipeline
-const xml = midi2MusicXML(midi, { clef: 'piano' });
-expect(xml).toContain('<note>');
-```
-
-## Future Enhancements
-
-### Short Term
-- [ ] **REST HANDLING**: Implement rest insertion to fill gaps between notes
-- [x] **CHORD HANDLING**: Detect and group simultaneous notes as chords
-- [x] **BEAMING**: Group eighth notes, 16th notes, etc. with beam elements
-- [ ] Implement tuplet recognition (triplets, quintuplets)
-- [ ] Add ties across measures
-- [ ] Pedal events support
-
-### Medium Term
-- [ ] Dynamics from MIDI velocity
-- [ ] Articulation marks (staccato, legato)
-- [ ] Slurs and phrasing
-
-### Long Term
-- [ ] System and page breaks
-- [ ] Multi-section support (key/time changes)
-- [ ] Lyrics from MIDI text events
-- [ ] Advanced voice separation algorithms
-
-## Migration from Old Architecture
-
-### Old Structure (Deprecated)
-```
-MIDI → MidiNote[] → MidiMeasure[] → Direct XML Rendering
-```
-
-### New Structure
-```
-MIDI → TemporalModel → NotationModel → LayoutModel → MusicXMLModel → XML
-```
-
-### Benefits
-- **Modularity**: Each stage has clear responsibilities
-- **Testability**: Each transform can be unit tested
-- **Debugging**: Inspect intermediate models at any stage
-- **Extensibility**: Add features without affecting other stages
-- **Maintainability**: Complex logic is broken into understandable steps
-
-## Performance Considerations
-
-The pipeline adds minimal overhead:
-- Each stage is O(n) where n = number of notes
-- Total complexity: O(4n) ≈ O(n)
-- Intermediate models are lightweight
-- Memory usage is acceptable for typical MIDI files (<10k notes)
-
-For very large files (>100k notes), consider streaming or chunking strategies.
-
-## License
-
-See LICENSE file for details.

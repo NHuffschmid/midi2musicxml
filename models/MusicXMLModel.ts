@@ -117,6 +117,7 @@ export interface NoteElement {
   notations?: Notations;
   staff?: number;
   startTick: number;
+  beam?: Beam[];
 }
 
 export interface MusicXMLPitch {
@@ -144,6 +145,11 @@ export interface Tuplet {
 
 export interface Articulation {
   type: 'staccato' | 'tenuto' | 'accent' | 'staccatissimo';
+}
+
+export interface Beam {
+  number?: number;
+  type: 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook';
 }
 
 export interface Print {

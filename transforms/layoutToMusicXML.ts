@@ -20,7 +20,8 @@ import {
   Attributes,
   NoteElement,
   Direction,
-  Clef
+  Clef,
+  Beam
 } from '../models/MusicXMLModel';
 
 export interface LayoutToMusicXMLOptions {
@@ -152,6 +153,9 @@ function convertMeasure(
       convertNote(note, divisions, staffCount)
     );
 
+    // Compute beam groups for this staff
+    computeBeamsForNotes(staffNotes, divisions, layoutMeasure.timeSignature);
+
     // Add staff number and collect
     for (let i = 0; i < staffNotes.length; i++) {
       allNotes.push({
@@ -191,6 +195,82 @@ function convertMeasure(
     notes,
     barline
   };
+}
+
+/**
+ * Compute and assign beam groups for a sequence of notes.
+ * Beams connect consecutive beamable notes (eighth or shorter) within the same beat.
+ * @param notes     - NoteElement array (primary + chord notes, in order)
+ * @param divisions - Ticks per quarter note
+ * @param timeSig   - Time signature for beat grouping
+ */
+function computeBeamsForNotes(
+  notes: NoteElement[],
+  divisions: number,
+  timeSig?: { beats: number; beatType: number }
+): void {
+  const beamableTypes = new Set(['eighth', '16th', '32nd', '64th']);
+  const beats    = timeSig?.beats    ?? 4;
+  const beatType = timeSig?.beatType ?? 4;
+  const ticksPerBeat = (divisions * 4) / beatType;
+
+  // Compound time (6/8, 9/8, 12/8): beam over dotted-quarter (3 eighths)
+  const isCompound = beatType === 8 && beats % 3 === 0;
+  const beamGroupTicks = isCompound ? ticksPerBeat * 3 : ticksPerBeat;
+
+  // Collect indices of primary (non-chord) notes
+  const primaryIdx: number[] = [];
+  for (let i = 0; i < notes.length; i++) {
+    if (!notes[i].chord) primaryIdx.push(i);
+  }
+
+  let pi = 0;
+  while (pi < primaryIdx.length) {
+    const idx  = primaryIdx[pi];
+    const note = notes[idx];
+
+    if (!beamableTypes.has(note.type)) {
+      pi++;
+      continue;
+    }
+
+    // Beat boundary this note belongs to
+    const beatStart = Math.floor(note.startTick / beamGroupTicks) * beamGroupTicks;
+    const beatEnd   = beatStart + beamGroupTicks;
+
+    // Collect consecutive beamable primaries within the same beat
+    const group: number[] = [idx];
+    let pj = pi + 1;
+    while (pj < primaryIdx.length) {
+      const nidx = primaryIdx[pj];
+      const next = notes[nidx];
+      if (!beamableTypes.has(next.type)) break;
+      if (next.startTick >= beatEnd)      break;
+      group.push(nidx);
+      pj++;
+    }
+
+    if (group.length >= 2) {
+      for (let k = 0; k < group.length; k++) {
+        const beamType: Beam['type'] = k === 0 ? 'begin'
+          : k === group.length - 1   ? 'end'
+          : 'continue';
+        const beamEl: Beam = { number: 1, type: beamType };
+
+        // Assign to primary note
+        notes[group[k]].beam = [beamEl];
+
+        // Propagate to chord notes immediately following this primary
+        let ci = group[k] + 1;
+        while (ci < notes.length && notes[ci].chord) {
+          notes[ci].beam = [beamEl];
+          ci++;
+        }
+      }
+    }
+
+    pi = pj;
+  }
 }
 
 /**

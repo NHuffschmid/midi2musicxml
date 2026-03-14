@@ -18,6 +18,7 @@ import {
   Print,
   Barline
 } from '../models/MusicXMLModel';
+import { preprocessMeasure } from './measurePreprocessor';
 
 /**
  * Main serialize function: MusicXMLModel → XML String
@@ -121,44 +122,18 @@ function serializeMeasure(measure: Measure): string {
     }
   }
 
-  // Notes (with backup elements based on startTick and timeCursor)
-  let voiceCounter = 1;
-  let timeCursor = 0;
-  let currentVoice = 1;
-  
-  for (let i = 0; i < measure.notes.length; i++) {
-    const note = measure.notes[i];
-    
-    if (i === 0) {
-      timeCursor = note.startTick;
-    }
-    
-    // Insert backup element if needed
-    if (note.startTick !== undefined && timeCursor !== note.startTick) {
-      const diff = timeCursor - note.startTick;
+  // Preprocess notes: resolve chords/beams/voices, build backup/forward events
+  for (const event of preprocessMeasure(measure.notes)) {
+    if (event.kind === 'backup') {
       xml += `      <backup>\n`;
-      xml += `        <duration>${diff}</duration>\n`;
+      xml += `        <duration>${event.duration}</duration>\n`;
       xml += `      </backup>\n`;
-      timeCursor = note.startTick;
-    }
-    
-    // Voice assignment for chords
-    if (note.chord) {
-      // Chord note: use same voice as previous note
-      currentVoice = voiceCounter;
+    } else if (event.kind === 'forward') {
+      xml += `      <forward>\n`;
+      xml += `        <duration>${event.duration}</duration>\n`;
+      xml += `      </forward>\n`;
     } else {
-      // Not a chord: increment voice counter for new note
-      voiceCounter++;
-      currentVoice = voiceCounter;
-    }
-    
-    // Render note with assigned voice
-    const noteWithVoice = { ...note, voice: currentVoice };
-    xml += serializeNote(noteWithVoice);
-    
-    // Advance timeCursor (only for non-chord notes or first chord note)
-    if (!note.chord && note.duration !== undefined) {
-      timeCursor += note.duration;
+      xml += serializeNote(event.note);
     }
   }
 
@@ -326,6 +301,14 @@ function serializeNote(note: NoteElement): string {
 
   // Type
   xml += `        <type>${note.type}</type>\n`;
+
+  // Beam(s)
+  if (note.beam) {
+    for (const b of note.beam) {
+      const numAttr = b.number !== undefined ? ` number="${b.number}"` : '';
+      xml += `        <beam${numAttr}>${b.type}</beam>\n`;
+    }
+  }
 
   // Dots
   if (note.dot) {
