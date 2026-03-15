@@ -283,8 +283,17 @@ function convertNote(
   totalStaves: number
 ): NoteElement {
 
-  // Use exact durationTicks instead of re-calculating from type/dots to avoid quantization errors
-  const duration = Math.round(note.durationTicks);
+  // Derive duration from the quantized note type and dots, NOT from raw durationTicks.
+  // Raw MIDI durationTicks is slightly shorter than the theoretical value (e.g. 228 vs 240
+  // for an eighth at PPQ=480) because pianists lift keys slightly before the next beat.
+  // Using raw ticks here causes spurious <forward> elements in the measure XML.
+  const typeToFactor: Record<string, number> = {
+    'whole': 4, 'half': 2, 'quarter': 1, 'eighth': 0.5,
+    '16th': 0.25, '32nd': 0.125, '64th': 0.0625,
+  };
+  const factor = typeToFactor[note.type] ?? 1;
+  const dotMultiplier = note.dots === 1 ? 1.5 : note.dots === 2 ? 1.75 : 1;
+  const duration = Math.round(divisions * factor * dotMultiplier);
 
   // Build notations if needed (articulations, etc.)
   const notations = note.articulation ? {
