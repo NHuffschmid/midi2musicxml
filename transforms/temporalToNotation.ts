@@ -112,7 +112,7 @@ function convertMeasure(
 ): NotationMeasure {
 
   // Sort and convert notes
-  const notes = convertNotes(temporalMeasure.notes, ppq, pulsesPerQuarterNote);
+  const notes = convertNotes(temporalMeasure.notes, ppq, pulsesPerQuarterNote, section.keySignature.fifths);
 
   return {
     number: temporalMeasure.number,
@@ -130,7 +130,8 @@ function convertMeasure(
 function convertNotes(
   midiNotes: MidiNote[],
   ppq: number,
-  pulsesPerQuarterNote: number
+  pulsesPerQuarterNote: number,
+  fifths: number = 0
 ): NotationNote[] {
   
   if (midiNotes.length === 0) {
@@ -147,7 +148,7 @@ function convertNotes(
     const noteDuration = midiNote.durationTicks;
 
     // Convert MIDI to notation
-    const pitch = midiToPitch(midiNote.midi);
+    const pitch = midiToPitch(midiNote.midi, fifths);
     const { type, dots } = ticksToDuration(noteDuration, pulsesPerQuarterNote);
 
     const notationNote: NotationNote = {
@@ -165,17 +166,37 @@ function convertNotes(
 }
 
 /**
- * Convert MIDI number to pitch
+ * Convert MIDI number to pitch, respecting the key signature.
+ *
+ * Keys with sharps (fifths > 0) or C major (fifths === 0) spell black keys
+ * as sharps (C#, D#, F#, G#, A#).  Keys with flats (fifths < 0) spell them
+ * as flats (Db, Eb, Gb, Ab, Bb).
+ *
+ * Pitch-class index (midi % 12):
+ *   0  1  2  3  4  5  6  7  8  9  10 11
+ *   C  C# D  D# E  F  F# G  G# A  A# B
+ *   C  Db D  Eb E  F  Gb G  Ab A  Bb B
  */
-function midiToPitch(midi: number): Pitch {
-  const stepNames: Array<'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'> = 
+function midiToPitch(midi: number, fifths: number = 0): Pitch {
+  // Sharp spellings (used when fifths >= 0)
+  const stepNamesSharp: Array<'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'> =
     ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
-  const alterMap = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
-  
-  const step = stepNames[midi % 12];
-  const alter = alterMap[midi % 12];
+  const alterMapSharp = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+
+  // Flat spellings (used when fifths < 0)
+  const stepNamesFlat: Array<'C' | 'D' | 'E' | 'F' | 'G' | 'A' | 'B'> =
+    ['C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'];
+  const alterMapFlat = [0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1, 0];
+
+  const useFlats = fifths < 0;
+  const stepNames = useFlats ? stepNamesFlat : stepNamesSharp;
+  const alterMap  = useFlats ? alterMapFlat  : alterMapSharp;
+
+  const pitchClass = midi % 12;
+  const step  = stepNames[pitchClass];
+  const alter = alterMap[pitchClass];
   const octave = Math.floor(midi / 12) - 1;
-  
+
   return { step, alter, octave };
 }
 
