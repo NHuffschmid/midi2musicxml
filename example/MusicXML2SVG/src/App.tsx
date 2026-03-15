@@ -3,7 +3,7 @@ import { MusicXMLViewer } from './components/MusicXMLViewer';
 import './App.css';
 
 // Dynamically import all MusicXML files from assets/musicxml folder
-const musicXmlModules = import.meta.glob('./assets/musicxml/*.xml', { eager: true, query: '?url', import: 'default' });
+const musicXmlModules = import.meta.glob('./assets/musicxml/*.musicxml', { eager: true, query: '?url', import: 'default' });
 
 const STORAGE_KEY = 'musicxml-viewer-selected-file';
 

@@ -26,8 +26,8 @@ export interface Midi2MusicXMLOptions {
   clef?: 'piano' | 'violin' | 'viola' | 'cello';
 }
 
-export interface Midi2MusicXMLResult {
-  xml: string;
+export interface Midi2MusicResult {
+  musicxml: string;
   noteCursorTicks: number[];
 }
 
@@ -44,7 +44,7 @@ export interface Midi2MusicXMLResult {
 export function midi2MusicXML(
   midi: Midi,
   options: Midi2MusicXMLOptions = {}
-): Midi2MusicXMLResult {
+): Midi2MusicResult {
 
   // Extract metadata
   const scoreTitle = options.title ?? analyzeTitle(midi);
@@ -54,7 +54,7 @@ export function midi2MusicXML(
 
   // Stage 1: Collect MIDI notes
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
-  if (midiNotes.length === 0) return { xml: '', noteCursorTicks: [] };
+  if (midiNotes.length === 0) return { musicxml: '', noteCursorTicks: [] };
 
   // Stage 2: MIDI → TemporalModel
   const temporalScore = midiToTemporal(midiNotes, midi, {
@@ -109,5 +109,5 @@ export function midi2MusicXML(
     )
   ].sort((a, b) => a - b);
 
-  return { xml: musicXml, noteCursorTicks };
+  return { musicxml: musicXml, noteCursorTicks };
 }

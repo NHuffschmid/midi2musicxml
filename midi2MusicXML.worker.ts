@@ -10,10 +10,10 @@ self.onmessage = async (event: MessageEvent) => {
     const midi = new Midi(midiBytes);
 
     // Convert to MusicXML (synchronous in worker)
-    const { xml, noteCursorTicks } = midi2MusicXML(midi, options);
+    const { musicxml, noteCursorTicks } = midi2MusicXML(midi, options);
 
-    // Send result back
-    self.postMessage({ success: true, xml, noteCursorTicks });
+    // Send result back (renamed to musicxml)
+    self.postMessage({ success: true, musicxml: musicxml, noteCursorTicks });
   }
   catch (error) {
     console.error('[Worker Thread] Error:', error);
