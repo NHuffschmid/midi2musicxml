@@ -1,12 +1,12 @@
 import { useRef, useCallback } from 'react';
 
-import type { Midi2MusicXMLOptions } from './index';
+import type { Midi2MusicXMLOptions, Midi2MusicXMLResult } from './index';
 import type { Midi } from '@tonejs/midi';
 
 export function useMidi2MusicXMLWorker() {
   const workerRef = useRef<Worker | null>(null);
 
-  const convert = useCallback(async (midi: Midi, options: Midi2MusicXMLOptions = {}): Promise<string> => {
+  const convert = useCallback(async (midi: Midi, options: Midi2MusicXMLOptions = {}): Promise<Midi2MusicXMLResult> => {
     return new Promise((resolve, reject) => {
       //console.log('[Midi2MusicXMLWorker] Starting midi2MusicXML conversion in Web Worker');
 
@@ -24,11 +24,10 @@ export function useMidi2MusicXMLWorker() {
 
       // Listen for response
       worker.onmessage = (event: MessageEvent) => {
-        const { success, xml, error } = event.data;
-        //console.log('[Midi2MusicXMLWorker] Received response from worker, success:', success);
+        const { success, xml, measureTickMap, noteCursorTicks, error } = event.data;
 
         if (success) {
-          resolve(xml);
+          resolve({ xml, measureTickMap, noteCursorTicks });
         } else {
           reject(new Error(error));
         }

@@ -26,6 +26,20 @@ export interface Midi2MusicXMLOptions {
   clef?: 'piano' | 'violin' | 'viola' | 'cello';
 }
 
+/** Tick range for one measure — used for playback cursor animation. */
+export interface MeasureTickInfo {
+  measureNumber: number;
+  startTick: number;
+  endTick: number;
+}
+
+export interface Midi2MusicXMLResult {
+  xml: string;
+  measureTickMap: MeasureTickInfo[];
+  /** Sorted unique startTick values for each OSMD cursor step (non-chord primary notes). */
+  noteCursorTicks: number[];
+}
+
 /**
  * Convert MIDI to MusicXML using 6-stage pipeline architecture:
  * 
@@ -39,7 +53,7 @@ export interface Midi2MusicXMLOptions {
 export function midi2MusicXML(
   midi: Midi,
   options: Midi2MusicXMLOptions = {}
-): string {
+): Midi2MusicXMLResult {
 
   // Extract metadata
   const scoreTitle = options.title ?? analyzeTitle(midi);
@@ -49,7 +63,7 @@ export function midi2MusicXML(
 
   // Stage 1: Collect MIDI notes
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
-  if (midiNotes.length === 0) return '';
+  if (midiNotes.length === 0) return { xml: '', measureTickMap: [], noteCursorTicks: [] };
 
   // Stage 2: MIDI → TemporalModel
   const temporalScore = midiToTemporal(midiNotes, midi, {
@@ -92,5 +106,26 @@ export function midi2MusicXML(
     lineSeparator: '\n'
   });
 
-  return musicXml;
+  // Build measure tick map from TemporalModel for playback cursor
+  const measureTickMap: MeasureTickInfo[] = temporalScore.sections
+    .flatMap(s => s.measures)
+    .map(m => ({
+      measureNumber: m.number,
+      startTick: m.startTick,
+      endTick: m.endTick
+    }));
+
+  // Build sorted unique list of note startTicks for note-by-note cursor animation.
+  // Non-chord primary notes only; deduplication handles multi-voice same-beat positions.
+  const noteCursorTicks: number[] = [
+    ...new Set(
+      musicXMLDoc.scorePartwise.parts
+        .flatMap(p => p.measures)
+        .flatMap(m => m.notes)
+        .filter(n => !n.chord)
+        .map(n => n.startTick)
+    )
+  ].sort((a, b) => a - b);
+
+  return { xml: musicXml, measureTickMap, noteCursorTicks };
 }
