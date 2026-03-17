@@ -145,6 +145,7 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
   const events: MeasureEvent[] = [];
   let timeCursor = 0;
   let cursorInitialized = false;
+  let currentVoice = 1;
 
   for (const v of voiceOrder) {
     const voiceNotes = byVoice.get(v)!;
@@ -159,15 +160,19 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
         const diff = timeCursor - note.startTick;
 
         if (diff > 0) {
-          events.push({ kind: 'backup',  duration:  diff });
+          events.push({ kind: 'backup', duration: diff });
           timeCursor = note.startTick;
+          // Every backward jump starts a new voice to keep the MusicXML valid.
+          currentVoice++;
         } else if (diff < 0) {
           events.push({ kind: 'forward', duration: -diff });
           timeCursor = note.startTick;
         }
       }
 
-      events.push({ kind: 'note', note });
+      // Emit note with the current voice (overrides model voice to reflect
+      // actual voice assignment after backup splits).
+      events.push({ kind: 'note', note: { ...note, voice: currentVoice } });
 
       if (!note.chord) {
         timeCursor += note.duration ?? 0;
