@@ -1,4 +1,4 @@
-import { MidiMeasure } from '../types';
+import { MidiMeasure, KeySignature } from '../types';
 
 /**
  * Analyzes all measures and determines the most likely key signature.
@@ -15,9 +15,9 @@ import { MidiMeasure } from '../types';
  * 4. The result is returned as a string (e.g. '2M' for D major, '2m' for B minor).
  * 
  * @param measures The array of measures to analyze
- * @returns The detected key (e.g. '2M' for D major, '2m' for B minor)
+ * @returns The detected key signature
  */
-export function analyseKey(measures: MidiMeasure[]): string {
+export function analyseKey(measures: MidiMeasure[]): KeySignature {
   // Scoring factors
   const DEVIATION_FACTOR = 1;     // Weight for notes outside the scale
   const TONIC_FACTOR = 0.01;      // Weight for tonic notes (small but decisive for ties)
@@ -75,8 +75,8 @@ export function analyseKey(measures: MidiMeasure[]): string {
   const allMidiNotes = measures.flatMap(m => m.notes);
   
   if (allMidiNotes.length === 0) {
-    console.log('[analyseKey] No notes found, defaulting to key 0M (C major)');
-    return '0M';
+    console.log('[analyseKey] No notes found, defaulting to C major');
+    return { fifths: 0, mode: 'major' };
   }
 
   // Extract pitch classes and durations
@@ -180,5 +180,9 @@ export function analyseKey(measures: MidiMeasure[]): string {
   );
   */
 
-  return selectedKey;
+  // Convert string format to KeySignature object
+  const fifths = parseInt(selectedKey.replace(/[Mm]/, ''), 10);
+  const mode = selectedKey.endsWith('M') ? 'major' : 'minor';
+  
+  return { fifths, mode };
 }
