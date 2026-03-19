@@ -19,6 +19,7 @@ import {
   Barline
 } from '../models/MusicXMLModel';
 import { preprocessMeasure } from './measurePreprocessor';
+import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
 /**
  * Main serialize function: MusicXMLModel → XML String
@@ -81,9 +82,13 @@ function serializeScorePartwise(score: ScorePartwise): string {
  */
 function serializePart(part: Part): string {
   let xml = `  <part id="${part.id}">\n`;
+  let currentDivisions = 480; // default fallback
 
   for (const measure of part.measures) {
-    xml += serializeMeasure(measure);
+    if (measure.attributes?.divisions !== undefined) {
+      currentDivisions = measure.attributes.divisions;
+    }
+    xml += serializeMeasure(measure, currentDivisions);
   }
 
   xml += `  </part>\n`;
@@ -93,7 +98,7 @@ function serializePart(part: Part): string {
 /**
  * Serialize measure element
  */
-function serializeMeasure(measure: Measure): string {
+function serializeMeasure(measure: Measure, divisions: number = 480): string {
   let xml = `    <measure number="${measure.number}">\n`;
 
   // Print
@@ -129,9 +134,21 @@ function serializeMeasure(measure: Measure): string {
       xml += `        <duration>${event.duration}</duration>\n`;
       xml += `      </backup>\n`;
     } else if (event.kind === 'forward') {
-      xml += `      <forward>\n`;
+      const { type: restType, dots: restDots } = midiTicksToXmlDurationType(event.duration, divisions);
+      xml += `      <note>\n`;
+      xml += `        <rest/>\n`;
       xml += `        <duration>${event.duration}</duration>\n`;
-      xml += `      </forward>\n`;
+      xml += `        <voice>${event.voice}</voice>\n`;
+      xml += `        <type>${restType}</type>\n`;
+      if (restDots > 0) {
+        for (let i = 0; i < restDots; i++) {
+          xml += `        <dot/>\n`;
+        }
+      }
+      if (event.staff !== undefined) {
+        xml += `        <staff>${event.staff}</staff>\n`;
+      }
+      xml += `      </note>\n`;
     } else {
       xml += serializeNote(event.note);
     }

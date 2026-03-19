@@ -20,7 +20,7 @@ import { NoteElement } from '../models/MusicXMLModel';
 export type MeasureEvent =
   | { kind: 'note';    note: NoteElement }
   | { kind: 'backup';  duration: number  }
-  | { kind: 'forward'; duration: number  };
+  | { kind: 'forward'; duration: number; voice: number; staff?: number };
 
 // ─── Step 1: Chord Resolution ─────────────────────────────────────────────────
 //
@@ -165,7 +165,7 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
           // Every backward jump starts a new voice to keep the MusicXML valid.
           currentVoice++;
         } else if (diff < 0) {
-          events.push({ kind: 'forward', duration: -diff });
+          events.push({ kind: 'forward', duration: -diff, voice: currentVoice, staff: note.staff });
           timeCursor = note.startTick;
         }
       }
