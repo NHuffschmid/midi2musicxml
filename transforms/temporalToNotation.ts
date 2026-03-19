@@ -85,7 +85,6 @@ function sectionsToMeasures(
         isFirstMeasureInSection && !isFirstSection, // Mark section start (except for the very first section)
         isFirstMeasureInSection && keySignatureChanged, // Show key signature if changed
         isFirstMeasureInSection, // Show time signature and tempo on first measure
-        ppq,
         pulsesPerQuarterNote
       );
       
@@ -107,12 +106,11 @@ function convertMeasure(
   isSectionStart: boolean,
   showKeySignature: boolean,
   isFirstMeasure: boolean,
-  ppq: number,
   pulsesPerQuarterNote: number
 ): NotationMeasure {
 
   // Sort and convert notes
-  const notes = convertNotes(temporalMeasure.notes, ppq, pulsesPerQuarterNote, section.keySignature.fifths);
+  const notes = convertNotes(temporalMeasure.notes, pulsesPerQuarterNote, section.keySignature.fifths);
 
   return {
     number: temporalMeasure.number,
@@ -129,7 +127,6 @@ function convertMeasure(
  */
 function convertNotes(
   midiNotes: MidiNote[],
-  ppq: number,
   pulsesPerQuarterNote: number,
   fifths: number = 0
 ): NotationNote[] {
