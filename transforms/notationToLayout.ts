@@ -10,7 +10,8 @@
 import {
   NotationScore,
   NotationMeasure,
-  NotationNote
+  NotationNote,
+  NotationPart
 } from '../models/NotationModel';
 
 import {
@@ -51,7 +52,7 @@ export function notationToLayout(
  * Convert a notation part to a layout part
  */
 function convertPart(
-  notationPart: any,
+  notationPart: NotationPart,
   instrument: InstrumentType
 ): LayoutPart {
   
@@ -113,7 +114,7 @@ function detectChordsInStaff(
  * Convert piano part (2 staves)
  */
 function convertPianoPartToLayout(
-  notationPart: any,
+  notationPart: NotationPart,
   clefs: ClefType[]
 ): LayoutPart {
   
@@ -177,7 +178,7 @@ function convertPianoPartToLayout(
  * Convert single-staff part
  */
 function convertSingleStaffPartToLayout(
-  notationPart: any,
+  notationPart: NotationPart,
   clefs: ClefType[]
 ): LayoutPart {
   

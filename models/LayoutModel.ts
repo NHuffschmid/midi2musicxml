@@ -1,5 +1,5 @@
 /**
- * LayoutModel - Stage 5 of the pipeline
+ * LayoutModel - Stage 4 of the pipeline
  * 
  * Adds layout decisions:
  * - Assignment to staves
