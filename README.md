@@ -18,19 +18,24 @@ A TypeScript/JavaScript module for converting MIDI files to MusicXML.
 import { midi2MusicXML } from 'midi2musicxml';
 import { Midi } from '@tonejs/midi';
 
-async function convertMidiFile(url) {
-  const response = await fetch(url);
-  const arrayBuffer = await response.arrayBuffer();
+// Read a local MIDI file (e.g. via a file input or drag & drop)
+async function convertMidiFile(file) {
+  const arrayBuffer = await file.arrayBuffer();
   const midi = new Midi(arrayBuffer);
   const { musicxml } = midi2MusicXML(midi);
   console.log(musicxml);
 }
 
-convertMidiFile('https://www.mutopiaproject.org/ftp/BeethovenLv/WoO59/fur_Elise_WoO59/fur_Elise_WoO59.mid');
+// Example: wire up a file input
+document.querySelector('input[type=file]').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) convertMidiFile(file);
+});
 ```
 
 ## Example
-See the (upcoming) `examples/` directory or use [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/) for rendering.
+
+See the [`example/`](example/README.md) directory for a runnable Vite + React app.
 
 ## Known Bugs / Limitations
 - This project is part of the DEPINUS project: https://github.com/NHuffschmid/depinus
