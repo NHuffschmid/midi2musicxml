@@ -93,8 +93,16 @@ export default function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Midi2MusicXML</h1>
-        <p>Convert MIDI files to MusicXML and render them as sheet music</p>
+        <h1>Midi2MusicXML Demo</h1>
+        <p>Convert MIDI files to MusicXML (and render them as sheet music)</p>
+        <a
+          href="https://github.com/NHuffschmid/midi2musicxml"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#aed6f1', fontWeight: 500, textDecoration: 'underline', fontSize: '1rem', marginTop: '0.7rem', display: 'inline-block' }}
+        >
+          Powered by Midi2MusicXML
+        </a>
       </header>
 
 
