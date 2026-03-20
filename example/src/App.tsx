@@ -1,4 +1,14 @@
-import { useState, useRef, DragEvent, ChangeEvent } from 'react';
+/**
+ * App.tsx – Root component of the midi2musicxml example application.
+ *
+ * This app demonstrates the full midi2musicxml pipeline in the browser:
+ *   1. The user selects a clef (piano, violin, viola, or cello).
+ *   2. A local MIDI file is loaded via drag-and-drop or file picker.
+ *   3. The MIDI data is converted to MusicXML using the midi2musicxml module.
+ *   4. The resulting MusicXML is rendered as sheet music via OpenSheetMusicDisplay.
+ */
+
+import { useState, useRef, DragEvent, ChangeEvent, useCallback, useEffect } from 'react';
 import { Midi } from '@tonejs/midi';
 import { midi2MusicXML } from '../../index.ts';
 import { MusicXMLViewer } from './components/MusicXMLViewer';
@@ -11,25 +21,30 @@ export default function App() {
   const [status, setStatus]     = useState<Status>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  // Clef selection state
+  const [clef, setClef] = useState<'piano' | 'violin' | 'viola' | 'cello'>('piano');
+  // Store the last loaded MIDI buffer for re-conversion
+  const lastMidiBuffer = useRef<ArrayBuffer | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Core conversion ──────────────────────────────────────────────────────
-
-  async function convertBuffer(buffer: ArrayBuffer) {
+  // Convert MIDI buffer to MusicXML using the selected clef
+  const convertBuffer = useCallback(async (buffer: ArrayBuffer, clefOverride?: typeof clef) => {
     const midi = new Midi(buffer);
-    const { musicxml: xml } = midi2MusicXML(midi);
+    // Pass clef option to midi2MusicXML
+    const { musicxml: xml } = midi2MusicXML(midi, { clef: clefOverride ?? clef });
     if (!xml) throw new Error('Conversion produced an empty score.');
     setMusicxml(xml);
     setStatus('success');
-  }
+  }, [clef]);
 
-  // ── File source ──────────────────────────────────────────────────────────
-
+  // Handle file input and store buffer for later re-conversion
   async function handleFile(file: File) {
     setStatus('loading');
     setErrorMsg('');
     try {
-      await convertBuffer(await file.arrayBuffer());
+      const buffer = await file.arrayBuffer();
+      lastMidiBuffer.current = buffer;
+      await convertBuffer(buffer);
     } catch (e) {
       setErrorMsg(e instanceof Error ? e.message : String(e));
       setStatus('error');
@@ -53,6 +68,24 @@ export default function App() {
     if (file) handleFile(file);
   }
 
+  // When clef changes and a score is already loaded, re-convert with the new clef.
+  // setStatus('loading') is called first, then the conversion is deferred to a new
+  // macrotask via setTimeout so React can render the loading banner before the
+  // synchronous midi2MusicXML computation blocks the main thread.
+  useEffect(() => {
+    if (musicxml && lastMidiBuffer.current) {
+      setStatus('loading');
+      const buf = lastMidiBuffer.current;
+      setTimeout(() => {
+        convertBuffer(buf, clef).catch(e => {
+          setErrorMsg(e instanceof Error ? e.message : String(e));
+          setStatus('error');
+        });
+      }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clef]);
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   const busy = status === 'loading';
@@ -64,8 +97,27 @@ export default function App() {
         <p>Convert MIDI files to MusicXML and render them as sheet music</p>
       </header>
 
-      <main className="App-main">
 
+      <main className="App-main">
+        {/* Clef selector */}
+        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+          <label htmlFor="clef-select" style={{ fontWeight: 500, marginRight: 8 }}>
+            Select clef:
+          </label>
+          <select
+            id="clef-select"
+            value={clef}
+            onChange={e => setClef(e.target.value as 'piano' | 'violin' | 'viola' | 'cello')}
+            style={{ fontSize: '1rem', padding: '0.2em 0.6em', borderRadius: 4 }}
+          >
+            <option value="piano">Piano (Grand Staff)</option>
+            <option value="violin">Violin (Treble)</option>
+            <option value="viola">Viola (Alto)</option>
+            <option value="cello">Cello (Bass)</option>
+          </select>
+        </div>
+
+        {/* File drop zone */}
         <div
           className={`drop-zone${isDragging ? ' dragging' : ''}`}
           onDragOver={handleDragOver}
@@ -88,7 +140,9 @@ export default function App() {
 
         {/* ── Status messages ─────────────────────────────────────────────── */}
         {status === 'loading' && (
-          <div className="status-banner loading">Converting MIDI to MusicXML…</div>
+          <div className="status-banner loading">
+            {musicxml ? 'Updating score for new clef…' : 'Converting MIDI to MusicXML…'}
+          </div>
         )}
         {status === 'error' && (
           <div className="status-banner error">⚠ {errorMsg}</div>
