@@ -83,12 +83,20 @@ function serializeScorePartwise(score: ScorePartwise): string {
 function serializePart(part: Part): string {
   let xml = `  <part id="${part.id}">\n`;
   let currentDivisions = 480; // default fallback
+  let currentTempo     = 120; // default fallback (BPM)
 
   for (const measure of part.measures) {
     if (measure.attributes?.divisions !== undefined) {
       currentDivisions = measure.attributes.divisions;
     }
-    xml += serializeMeasure(measure, currentDivisions);
+    if (measure.direction) {
+      for (const dir of measure.direction) {
+        if (dir.sound?.tempo !== undefined) {
+          currentTempo = dir.sound.tempo;
+        }
+      }
+    }
+    xml += serializeMeasure(measure, currentDivisions, currentTempo);
   }
 
   xml += `  </part>\n`;
@@ -98,7 +106,7 @@ function serializePart(part: Part): string {
 /**
  * Serialize measure element
  */
-function serializeMeasure(measure: Measure, divisions: number = 480): string {
+function serializeMeasure(measure: Measure, divisions: number = 480, tempo: number = 120): string {
   let xml = `    <measure number="${measure.number}">\n`;
 
   // Print
@@ -127,8 +135,8 @@ function serializeMeasure(measure: Measure, divisions: number = 480): string {
     }
   }
 
-  // Preprocess notes: resolve chords/beams/voices, build backup/forward events
-  for (const event of preprocessMeasure(measure.notes)) {
+  // Preprocess notes: resolve chords/beams/voices, apply staccato, build backup/forward events
+  for (const event of preprocessMeasure(measure.notes, divisions, tempo)) {
     if (event.kind === 'backup') {
       xml += `      <backup>\n`;
       xml += `        <duration>${event.duration}</duration>\n`;

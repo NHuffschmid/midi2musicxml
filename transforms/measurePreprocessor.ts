@@ -5,15 +5,17 @@
  * (notes interspersed with backup/forward elements) ready for XML
  * serialization.
  *
- * The processing is split into four independent, testable steps:
+ * The processing is split into five independent, testable steps:
  *
  *   Step 1 – resolveChords   : mark chord notes, unify voice per tick+staff
  *   Step 2 – resolveBeams    : unify voice within each beam group
- *   Step 3 – assignVoices    : map staff numbers → final voice numbers 1, 2, …
- *   Step 4 – buildMeasureEvents : sort voices, insert backup / forward
+ *   Step 3 – assignVoices      : map staff numbers → final voice numbers 1, 2, …
+ *   Step 4 – resolveStaccato   : absorb short rest gaps as staccato articulations
+ *   Step 5 – buildMeasureEvents : sort voices, insert backup / forward
  */
 
 import { NoteElement } from '../models/MusicXMLModel';
+import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
 // ─── Public event type ────────────────────────────────────────────────────────
 
@@ -113,7 +115,97 @@ export function assignVoices(notes: NoteElement[]): NoteElement[] {
   });
 }
 
-// ─── Step 4: Build Measure Events ─────────────────────────────────────────────
+// ─── Step 4: Staccato Resolution ────────────────────────────────────────────────
+//
+// Within each (staff, voice) group, if a primary note is immediately followed
+// by a short gap (gap > 0 and gap ≤ note.duration) before the next note in the
+// same voice, the gap is absorbed into the note's duration and a staccato
+// articulation is added.  The note type is recalculated accordingly.
+// Chord siblings sharing the same startTick/staff/voice have their duration
+// extended in parallel so that the MusicXML stays consistent.
+//
+// Additional guard: the combined duration (note + gap) must not exceed
+// STACCATO_MAX_DURATION_MS milliseconds, so that slow or long notes are
+// never misidentified as staccato.
+//
+// This step must run after assignVoices (Step 3) because only then are
+// staff and voice determined, and before buildMeasureEvents (Step 5) so that
+// no forward/rest element is emitted for the absorbed gap.
+
+/** Maximum combined duration (ms) that qualifies as staccato. */
+const STACCATO_MAX_DURATION_MS = 250;
+
+/** Convert MIDI ticks to milliseconds given divisions (PPQ) and tempo (BPM). */
+function ticksToMs(ticks: number, divisions: number, tempoBpm: number): number {
+  return (ticks / divisions) * (60_000 / tempoBpm);
+}
+
+export function resolveStaccato(notes: NoteElement[], divisions: number, tempoBpm: number): NoteElement[] {
+  // Group primary (non-chord) notes by (staff, voice) to detect gaps
+  const groups = new Map<string, NoteElement[]>();
+
+  for (const note of notes) {
+    if (note.chord) continue;
+    const key = `${note.staff ?? 1}:${note.voice ?? 1}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(note);
+  }
+
+  // Sort each group by startTick
+  for (const group of groups.values()) {
+    group.sort((a, b) => a.startTick - b.startTick);
+  }
+
+  // Collect override data keyed by `startTick:staff:voice`
+  const overrides = new Map<string, { duration: number; type: string; dot: number }>();
+
+  for (const group of groups.values()) {
+    for (let i = 0; i < group.length - 1; i++) {
+      const note     = group[i];
+      const nextNote = group[i + 1];
+      const gap      = nextNote.startTick - (note.startTick + note.duration);
+
+      if (gap > 0 && gap <= note.duration) {
+        const newDuration    = note.duration + gap;
+        const newDurationMs  = ticksToMs(newDuration, divisions, tempoBpm);
+        if (newDurationMs > STACCATO_MAX_DURATION_MS) continue;
+        const { type, dots } = midiTicksToXmlDurationType(newDuration, divisions);
+        const key = `${note.startTick}:${note.staff ?? 1}:${note.voice ?? 1}`;
+        overrides.set(key, { duration: newDuration, type, dot: dots });
+      }
+    }
+  }
+
+  if (overrides.size === 0) return notes;
+
+  return notes.map(note => {
+    const key      = `${note.startTick}:${note.staff ?? 1}:${note.voice ?? 1}`;
+    const override = overrides.get(key);
+    if (!override) return note;
+
+    const updated: NoteElement = {
+      ...note,
+      duration: override.duration,
+      type:     override.type,
+      dot:      override.dot > 0 ? override.dot : undefined,
+    };
+
+    // Staccato articulation only on the primary (non-chord) note
+    if (!note.chord) {
+      updated.notations = {
+        ...note.notations,
+        articulations: [
+          ...(note.notations?.articulations ?? []),
+          { type: 'staccato' as const },
+        ],
+      };
+    }
+
+    return updated;
+  });
+}
+
+// ─── Step 5: Build Measure Events ─────────────────────────────────────────────
 //
 // 1. Groups notes by voice.
 // 2. Within each voice, orders notes by startTick.
@@ -186,12 +278,13 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Runs all four preprocessing steps in order and returns the final
+ * Runs all five preprocessing steps in order and returns the final
  * sequence of MeasureEvents ready for XML serialization.
  */
-export function preprocessMeasure(notes: NoteElement[]): MeasureEvent[] {
+export function preprocessMeasure(notes: NoteElement[], divisions: number, tempoBpm: number = 120): MeasureEvent[] {
   const step1 = resolveChords(notes);
   const step2 = resolveBeams(step1);
   const step3 = assignVoices(step2);
-  return buildMeasureEvents(step3);
+  const step4 = resolveStaccato(step3, divisions, tempoBpm);
+  return buildMeasureEvents(step4);
 }
