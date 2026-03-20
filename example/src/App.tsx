@@ -100,15 +100,15 @@ export default function App() {
 
       <main className="App-main">
         {/* Clef selector */}
-        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+        <div className="clef-selector">
           <label htmlFor="clef-select" style={{ fontWeight: 500, marginRight: 8 }}>
             Select clef:
           </label>
           <select
             id="clef-select"
+            className="clef-select"
             value={clef}
             onChange={e => setClef(e.target.value as 'piano' | 'violin' | 'viola' | 'cello')}
-            style={{ fontSize: '1rem', padding: '0.2em 0.6em', borderRadius: 4 }}
           >
             <option value="piano">Piano (Grand Staff)</option>
             <option value="violin">Violin (Treble)</option>
@@ -136,6 +136,30 @@ export default function App() {
             onChange={handleFileInput}
             style={{ display: 'none' }}
           />
+        </div>
+
+        {/* Download MusicXML button */}
+        <div className="download-btn">
+          <button
+            type="button"
+            disabled={!musicxml || status !== 'success'}
+            onClick={() => {
+              if (!musicxml) return;
+              const blob = new Blob([musicxml], { type: 'application/vnd.recordare.musicxml+xml' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'score.musicxml';
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }, 0);
+            }}
+          >
+            Download MusicXML
+          </button>
         </div>
 
         {/* ── Status messages ─────────────────────────────────────────────── */}
