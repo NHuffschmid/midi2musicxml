@@ -1,6 +1,6 @@
 # Midi2MusicXML
 
-A TypeScript/JavaScript module for converting MIDI files to MusicXML.
+A TypeScript/JavaScript module for converting MIDI files to MusicXML in the browser.
 
 ## Features
 - Modular 6-stage pipeline: MIDI → MusicXML
@@ -57,7 +57,8 @@ See the [`example/`](example/README.md) directory for a runnable Vite + React ap
 ## Known Bugs / Limitations
 - This project is part of the DEPINUS project: https://github.com/NHuffschmid/depinus
 - The Midi2MusicXML module is used there within the ScoreView
-- Other usage scenarios may work, but probably will not  
+- Other usage scenarios may work, but probably will not
+- THIS PROJECT IS IN AN EARLY EXPERIMENTAL STAGE 
 
 ## Project Structure
 - `analysis/` – Key, tempo, and section analysis utilities
