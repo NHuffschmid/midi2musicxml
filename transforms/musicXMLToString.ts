@@ -14,10 +14,9 @@ import {
   Direction,
   Clef,
   Key,
-  Time,
-  Print,
-  Barline
+  Time
 } from '../models/MusicXMLModel';
+import { MIDI2MUSICXML_VERSION } from '../VERSION';
 import { preprocessMeasure } from './measurePreprocessor';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
@@ -46,9 +45,9 @@ function serializeScorePartwise(score: ScorePartwise): string {
   }
 
   // Identification
+  xml += `  <identification>\n`;
+  xml += `    <creator type="software">Midi2MusicXML v${MIDI2MUSICXML_VERSION}</creator>\n`;
   if (score.identification) {
-    xml += `  <identification>\n`;
-    xml += `    <creator type="software">Midi2MusicXML</creator>\n`;
     if (score.identification.creator) {
       for (const creator of score.identification.creator) {
         xml += `    <creator type="${creator.type}">${escapeXml(creator.name)}</creator>\n`;
@@ -57,8 +56,8 @@ function serializeScorePartwise(score: ScorePartwise): string {
     if (score.identification.rights) {
       xml += `    <rights>${escapeXml(score.identification.rights)}</rights>\n`;
     }
-    xml += `  </identification>\n`;
   }
+  xml += `  </identification>\n`;
 
   // Part list
   xml += `  <part-list>\n`;
@@ -84,7 +83,7 @@ function serializeScorePartwise(score: ScorePartwise): string {
 function serializePart(part: Part): string {
   let xml = `  <part id="${part.id}">\n`;
   let currentDivisions = 480; // default fallback
-  let currentTempo     = 120; // default fallback (BPM)
+  let currentTempo = 120; // default fallback (BPM)
 
   for (const measure of part.measures) {
     if (measure.attributes?.divisions !== undefined) {
