@@ -173,7 +173,7 @@ export default function App() {
         {/* ── Status messages ─────────────────────────────────────────────── */}
         {status === 'loading' && (
           <div className="status-banner loading">
-            {musicxml ? 'Updating score for new clef…' : 'Converting MIDI to MusicXML…'}
+            {musicxml ? 'Updating score…' : 'Converting MIDI to MusicXML…'}
           </div>
         )}
         {status === 'error' && (
