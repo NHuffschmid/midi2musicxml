@@ -107,7 +107,8 @@ function sectionsToMeasures(
         keySignature: isFirstMeasureInSection && keySignatureChanged ? section.keySignature : undefined,
         tempo: isFirstMeasureInSection && section.tempo ? section.tempo : undefined,
         sectionStart: (isFirstMeasureInSection && !isFirstSection) || undefined,
-        notes
+        notes,
+        pedalEvents: temporalMeasure.pedalEvents
       });
     }
 

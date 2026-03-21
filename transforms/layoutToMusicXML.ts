@@ -11,6 +11,7 @@ import {
   LayoutMeasure,
   LayoutNote
 } from '../models/LayoutModel';
+import type { PedalEvent } from '../models/TemporalModel';
 
 import {
   MusicXMLDocument,
@@ -187,13 +188,38 @@ function convertMeasure(
   // Add barline for section separation (double barline at left side)
   const barline = layoutMeasure.sectionStart ? [{ location: 'left' as const, barStyle: 'light-light' as const }] : undefined;
 
+  // Convert pedal events to tick-stamped direction elements
+  const pedalDirections: Array<{ tick: number; direction: Direction }> = [];
+  if (layoutMeasure.pedalEvents) {
+    for (const pedalEvent of layoutMeasure.pedalEvents) {
+      // Only sustain pedal (CC64) is rendered; sostenuto and soft are passed
+      // through the pipeline but intentionally omitted from the MusicXML output.
+      if (pedalEvent.pedalType !== undefined && pedalEvent.pedalType !== 'sustain') continue;
+      pedalDirections.push({
+        tick: pedalEvent.tick,
+        direction: {
+          placement: 'below',
+          directionType: [{
+            pedal: {
+              type: pedalEvent.type === 'down' ? 'start' : 'stop',
+              line: false
+            }
+          }],
+          // For grand staff (piano), pin pedal marks to the bass staff
+          staff: staffCount > 1 ? 2 : undefined
+        }
+      });
+    }
+  }
+
   return {
     number: layoutMeasure.number,
     print,
     attributes,
     direction: direction.length > 0 ? direction : undefined,
     notes,
-    barline
+    barline,
+    pedalDirections: pedalDirections.length > 0 ? pedalDirections : undefined
   };
 }
 

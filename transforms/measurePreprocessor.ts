@@ -14,15 +14,16 @@
  *   Step 5 – buildMeasureEvents : sort voices, insert backup / forward
  */
 
-import { NoteElement } from '../models/MusicXMLModel';
+import { NoteElement, Direction } from '../models/MusicXMLModel';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 
 // ─── Public event type ────────────────────────────────────────────────────────
 
 export type MeasureEvent =
-  | { kind: 'note';    note: NoteElement }
-  | { kind: 'backup';  duration: number  }
-  | { kind: 'forward'; duration: number; voice: number; staff?: number };
+  | { kind: 'note';      note: NoteElement }
+  | { kind: 'backup';    duration: number  }
+  | { kind: 'forward';   duration: number; voice: number; staff?: number }
+  | { kind: 'direction'; direction: Direction };
 
 // ─── Step 1: Chord Resolution ─────────────────────────────────────────────────
 //
@@ -212,7 +213,10 @@ export function resolveStaccato(notes: NoteElement[], divisions: number, tempoBp
 // 3. Emits backup / forward elements whenever the time cursor needs to jump.
 //    Chord notes do not advance the cursor.
 
-export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
+export function buildMeasureEvents(
+  notes: NoteElement[],
+  pedalDirections?: Array<{ tick: number; direction: Direction }>
+): MeasureEvent[] {
   // Group by voice (preserving voice order)
   const voiceOrder: number[] = [];
   const byVoice   = new Map<number, NoteElement[]>();
@@ -234,6 +238,11 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
     voiceNotes.sort((a, b) => a.startTick - b.startTick);
   }
 
+  // Pedal direction tracking – emitted only during the first voice to avoid duplicates
+  const sortedPedal = pedalDirections ? [...pedalDirections].sort((a, b) => a.tick - b.tick) : [];
+  let pedalIdx = 0;
+  const firstVoice = voiceOrder.length > 0 ? voiceOrder[0] : undefined;
+
   const events: MeasureEvent[] = [];
   let timeCursor = 0;
   let cursorInitialized = false;
@@ -241,6 +250,7 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
 
   for (const v of voiceOrder) {
     const voiceNotes = byVoice.get(v)!;
+    const isFirstVoice = v === firstVoice;
 
     for (const note of voiceNotes) {
       if (!cursorInitialized) {
@@ -260,6 +270,14 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
           events.push({ kind: 'forward', duration: -diff, voice: currentVoice, staff: note.staff });
           timeCursor = note.startTick;
         }
+
+        // Emit pedal directions at or before this note's tick (first voice only)
+        if (isFirstVoice) {
+          while (pedalIdx < sortedPedal.length && sortedPedal[pedalIdx].tick <= note.startTick) {
+            events.push({ kind: 'direction', direction: sortedPedal[pedalIdx].direction });
+            pedalIdx++;
+          }
+        }
       }
 
       // Emit note with the current voice (overrides model voice to reflect
@@ -272,6 +290,12 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
     }
   }
 
+  // Emit any remaining pedal events that fall after all notes in this measure
+  while (pedalIdx < sortedPedal.length) {
+    events.push({ kind: 'direction', direction: sortedPedal[pedalIdx].direction });
+    pedalIdx++;
+  }
+
   return events;
 }
 
@@ -281,10 +305,15 @@ export function buildMeasureEvents(notes: NoteElement[]): MeasureEvent[] {
  * Runs all five preprocessing steps in order and returns the final
  * sequence of MeasureEvents ready for XML serialization.
  */
-export function preprocessMeasure(notes: NoteElement[], divisions: number, tempoBpm: number = 120): MeasureEvent[] {
+export function preprocessMeasure(
+  notes: NoteElement[],
+  divisions: number,
+  tempoBpm: number = 120,
+  pedalDirections?: Array<{ tick: number; direction: Direction }>
+): MeasureEvent[] {
   const step1 = resolveChords(notes);
   const step2 = resolveBeams(step1);
   const step3 = assignVoices(step2);
   const step4 = resolveStaccato(step3, divisions, tempoBpm);
-  return buildMeasureEvents(step4);
+  return buildMeasureEvents(step4, pedalDirections);
 }
