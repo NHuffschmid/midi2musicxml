@@ -43,6 +43,10 @@ export function dumpLayoutModel(score: LayoutScore) {
               chord: n.isChord,
               startTick: n.startTick,
               durationTicks: n.durationTicks,
+              tie: n.tie?.type,
+              tuplet: n.tuplet
+                ? `${n.tuplet.actualNotes}:${n.tuplet.normalNotes}(${n.tuplet.noteType}) pos=${n.tuplet.position}/${n.tuplet.actualNotes}`
+                : undefined
             }))
           })),
           totalNoteCount: allNotes.length

@@ -34,6 +34,10 @@ export function dumpNotationModel(score: NotationScore) {
             dots: note.dots,
             startTick: note.startTick,
             durationTicks: note.durationTicks,
+            tie: note.tie?.type,
+            tuplet: note.tuplet
+              ? `${note.tuplet.actualNotes}:${note.tuplet.normalNotes}(${note.tuplet.noteType}) pos=${note.tuplet.position}/${note.tuplet.actualNotes}`
+              : undefined
           }))
         };
       })

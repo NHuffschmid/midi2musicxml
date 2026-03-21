@@ -43,6 +43,9 @@ export function dumpMusicXMLModel(doc: MusicXMLDocument) {
             dot: note.dot,
             chord: note.chord,
             staff: note.staff,
+            timeModification: note.timeModification
+              ? `${note.timeModification.actualNotes}:${note.timeModification.normalNotes}`
+              : undefined,
             notations: note.notations ? {
               tied: note.notations.tied?.map(t => t.type),
               tuplet: note.notations.tuplet?.map(t => ({ type: t.type, number: t.number }))
