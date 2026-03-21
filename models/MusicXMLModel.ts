@@ -54,8 +54,6 @@ export interface Measure {
   direction?: Direction[];
   notes: NoteElement[];
   barline?: Barline[];
-  /** Tick-stamped pedal directions to be interleaved with notes during serialization */
-  pedalDirections?: Array<{ tick: number; direction: Direction }>;
 }
 
 export interface Attributes {
@@ -87,7 +85,6 @@ export interface Direction {
   placement?: string;
   directionType: DirectionType[];
   sound?: Sound;
-  staff?: number;
 }
 
 export interface DirectionType {

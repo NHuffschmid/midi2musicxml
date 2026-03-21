@@ -33,7 +33,6 @@ Stage 6: XML String
   - Extract time signature, key signature, tempo for each section
   - Preserve measure boundaries and timing information
   - Define common types: `TimeSignature`, `KeySignature`, `PedalEvent`
-  - **Extract pedal CC events** (CC64 sustain, CC66 sostenuto, CC67 soft) from all MIDI tracks and attach them tick-stamped to the corresponding `TemporalMeasure.pedalEvents`
 - **Key Feature**: Focuses purely on temporal/rhythmic structure, no musical interpretation yet
 - **File**: `models/TemporalModel.ts`
 - **Transform**: `transforms/midiToTemporal.ts`
@@ -73,11 +72,9 @@ Stage 6: XML String
   - **Beam computation** (`computeBeamsForNotes`): calculates beam groups per staff based on beat boundaries and time signature. Consecutive beamable notes (eighth, 16th, 32nd, 64th) within the same beat are grouped with `begin` / `continue` / `end` markers. Compound time (6/8, 9/8, 12/8) uses dotted-quarter as beam group unit.
   - Notes carry `startTick` for later backup/forward calculation
   - Chord flag (`chord`) is transferred from `LayoutNote.isChord`
-  - **Pedal directions**: `LayoutMeasure.pedalEvents` are converted to `Measure.pedalDirections` (tick-stamped `Direction` objects with `<pedal>` elements). For grand staff (piano), the direction references staff 2 (bass).
 - **Key model types**:
   - `NoteElement`: `pitch`, `duration`, `type`, `voice?`, `dot?`, `chord?`, `staff?`, `beam?`, `startTick`, `notations?`
   - `Beam`: `{ number?: number; type: 'begin' | 'continue' | 'end' | 'forward hook' | 'backward hook' }`
-  - `Measure.pedalDirections`: `Array<{ tick: number; direction: Direction }>` – interleaved during serialization
 - **File**: `models/MusicXMLModel.ts`
 - **Transform**: `transforms/layoutToMusicXML.ts`
 

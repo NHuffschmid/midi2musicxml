@@ -136,7 +136,7 @@ function serializeMeasure(measure: Measure, divisions: number = 480, tempo: numb
   }
 
   // Preprocess notes: resolve chords/beams/voices, apply staccato, build backup/forward events
-  for (const event of preprocessMeasure(measure.notes, divisions, tempo, measure.pedalDirections)) {
+  for (const event of preprocessMeasure(measure.notes, divisions, tempo)) {
     if (event.kind === 'backup') {
       xml += `      <backup>\n`;
       xml += `        <duration>${event.duration}</duration>\n`;
@@ -157,8 +157,6 @@ function serializeMeasure(measure: Measure, divisions: number = 480, tempo: numb
         xml += `        <staff>${event.staff}</staff>\n`;
       }
       xml += `      </note>\n`;
-    } else if (event.kind === 'direction') {
-      xml += serializeDirection(event.direction);
     } else {
       xml += serializeNote(event.note);
     }
@@ -292,10 +290,6 @@ function serializeDirection(direction: Direction): string {
 
   if (direction.sound?.tempo !== undefined) {
     xml += `        <sound tempo="${direction.sound.tempo}"/>\n`;
-  }
-
-  if (direction.staff !== undefined) {
-    xml += `        <staff>${direction.staff}</staff>\n`;
   }
 
   xml += `      </direction>\n`;

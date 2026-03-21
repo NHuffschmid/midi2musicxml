@@ -36,12 +36,11 @@ export interface KeySignature {
 }
 
 /**
- * Pedal event (sustain, sostenuto, or soft pedal)
+ * Pedal event (sustain pedal)
  */
 export interface PedalEvent {
   tick: number;
   type: 'down' | 'up';
-  pedalType?: 'sustain' | 'sostenuto' | 'soft'; // CC64, CC66, CC67
 }
 
 /**
@@ -101,10 +100,7 @@ export interface TemporalMeasure {
   
   /** All notes in this measure (unsorted) */
   notes: MidiNote[];
-
-  /** Pedal events (CC64/CC66/CC67) within this measure */
-  pedalEvents?: PedalEvent[];
-
+  
   /** First measure in a section? */
   isFirstInSection?: boolean;
 }

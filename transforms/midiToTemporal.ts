@@ -11,7 +11,7 @@
 
 import { Midi } from '@tonejs/midi';
 import { MidiNote } from '../types';
-import { TemporalScore, TemporalSection, TemporalMeasure, PedalEvent } from '../models/TemporalModel';
+import { TemporalScore, TemporalSection, TemporalMeasure } from '../models/TemporalModel';
 import { analyzeBeats } from '../analysis/analyzeBeats';
 import { analyseKey } from '../analysis/analyseKey';
 import { analyzeTempo } from '../analysis/analyzeTempo';
@@ -47,10 +47,6 @@ export function midiToTemporal(
   
   // Step 1: Group notes into measures
   const measures = groupNotesIntoMeasures(midiNotes, midi);
-
-  // Step 1b: Extract pedal CC events and assign to measures
-  const pedalEvents = collectPedalEvents(midi);
-  assignPedalEventsToMeasures(measures, pedalEvents);
   
   // Step 2: Split measures into sections based on pauses
   const measureGroups = splitMeasuresByPauses(measures, pauseThreshold);
@@ -266,57 +262,4 @@ function getFirstNoteStartTime(measure: TemporalMeasure): number | null {
   }
   
   return minStartTime === Infinity ? null : minStartTime;
-}
-
-// ─── Pedal event extraction ────────────────────────────────────────────────────
-
-/** MIDI CC numbers for the three standard pedals. */
-const PEDAL_CC_MAP: Record<number, NonNullable<PedalEvent['pedalType']>> = {
-  64: 'sustain',
-  66: 'sostenuto',
-  67: 'soft',
-};
-
-/**
- * Collect all pedal CC events (CC64, CC66, CC67) from all MIDI tracks.
- * Values are stored by @tonejs/midi as floats 0-1 (divided by 127).
- */
-function collectPedalEvents(midi: Midi): PedalEvent[] {
-  const events: PedalEvent[] = [];
-
-  for (const track of midi.tracks) {
-    for (const [ccNumStr, pedalType] of Object.entries(PEDAL_CC_MAP) as [string, PedalEvent['pedalType']][]) {
-      const ccNum = parseInt(ccNumStr);
-      const ccArr = (track.controlChanges as Record<number, Array<{ ticks: number; value: number }>>)[ccNum];
-      if (!ccArr) continue;
-      for (const change of ccArr) {
-        events.push({
-          tick: change.ticks,
-          type: change.value >= 0.5 ? 'down' : 'up',
-          pedalType,
-        });
-      }
-    }
-  }
-
-  events.sort((a, b) => a.tick - b.tick);
-  return events;
-}
-
-/**
- * Assign pedal events to the measures they fall within (by tick position).
- * Events that fall exactly on the boundary belong to the measure they start.
- */
-function assignPedalEventsToMeasures(measures: TemporalMeasure[], pedalEvents: PedalEvent[]): void {
-  for (const event of pedalEvents) {
-    for (const measure of measures) {
-      if (event.tick >= measure.startTick && event.tick < measure.endTick) {
-        if (!measure.pedalEvents) {
-          measure.pedalEvents = [];
-        }
-        measure.pedalEvents.push(event);
-        break;
-      }
-    }
-  }
 }
