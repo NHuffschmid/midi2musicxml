@@ -53,9 +53,14 @@ export function midiTicksToXmlDurationType(
       dots: safeDots,
     };
   }
-  // Fallback: treat as quarter
-  //console.warn(
-  //  `midiTicksToXmlDurationType: Unmatched durationTicks=${durationTicks}, pulsesPerQuarterNote=${pulsesPerQuarterNote}. Falling back to quarter note.`
-  //);
-  return { duration: pulsesPerQuarterNote, type: 'quarter', dots: 0 };
+  // Fallback: no standard type matched within tolerance – return the closest match.
+  // This prevents spurious quarter-note substitution for long cross-measure note segments.
+  const fallbackType = bestMatch.name.startsWith('dotted ')
+    ? bestMatch.name.replace('dotted ', '')
+    : bestMatch.name;
+  return {
+    duration: pulsesPerQuarterNote * bestMatch.factor,
+    type: fallbackType,
+    dots: Math.min(bestMatch.dots, 1),
+  };
 }

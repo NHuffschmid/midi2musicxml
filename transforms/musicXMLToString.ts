@@ -319,6 +319,13 @@ function serializeNote(note: NoteElement): string {
   // Duration
   xml += `        <duration>${note.duration}</duration>\n`;
 
+  // Tie elements (must appear after <duration>, before <type>)
+  if (note.tie) {
+    for (const t of note.tie) {
+      xml += `        <tie type="${t.type}"/>\n`;
+    }
+  }
+
   // Voice
   if (note.voice !== undefined) {
     xml += `        <voice>${note.voice}</voice>\n`;

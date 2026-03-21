@@ -18,6 +18,9 @@ import { analyzeTempo } from '../analysis/analyzeTempo';
 
 const SECTION_BREAK_THRESHOLD = 2.0; // Pause duration in seconds to trigger section break
 
+/** Maximum overshoot (in ticks) past a measure boundary that is silently clipped. */
+const MEASURE_BOUNDARY_CLIP_THRESHOLD = 10;
+
 export interface MidiToTemporalOptions {
   title?: string;
   composer?: string;
@@ -105,13 +108,23 @@ function groupNotesIntoMeasures(midiNotes: MidiNote[], midi: Midi): TemporalMeas
     
     const startTick = measureNumber * ticksPerMeasure;
     const endTick = startTick + ticksPerMeasure;
-    
+
+    // Clip notes that overshoot the measure boundary by less than the threshold
+    const clippedNotes = notesInMeasure.map(note => {
+      const noteEnd = note.ticks + note.durationTicks;
+      const overshoot = noteEnd - endTick;
+      if (overshoot > 0 && overshoot < MEASURE_BOUNDARY_CLIP_THRESHOLD) {
+        return { ...note, durationTicks: endTick - note.ticks };
+      }
+      return note;
+    });
+
     measures.push({
       number: i + 1, // 1-based global measure number
       startTick,
       endTick,
       durationTicks: ticksPerMeasure,
-      notes: notesInMeasure
+      notes: clippedNotes
     });
   }
   

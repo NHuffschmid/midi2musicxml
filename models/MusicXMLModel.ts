@@ -114,6 +114,7 @@ export interface NoteElement {
   type: string; // quarter, eighth, etc.
   dot?: number; // Number of dots
   chord?: boolean; // True if this note is part of a chord (not the first note)
+  tie?: Array<{ type: 'start' | 'stop' }>; // Tie elements (stop before start for continue)
   notations?: Notations;
   staff?: number;
   startTick: number;

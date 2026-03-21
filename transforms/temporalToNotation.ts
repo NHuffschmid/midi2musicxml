@@ -19,7 +19,8 @@ import {
   NotationScore,
   NotationMeasure,
   NotationNote,
-  Pitch
+  Pitch,
+  TieInfo
 } from '../models/NotationModel';
 
 import { MidiNote } from '../types';
@@ -57,8 +58,17 @@ export function temporalToNotation(
   };
 }
 
+// ─── Cross-measure tie support ────────────────────────────────────────────────
+
+/** A note that started in a previous measure and continues into the current one. */
+interface CarryOverNote {
+  pitch: Pitch;
+  remainingTicks: number;
+}
+
 /**
- * Convert temporal sections to notation measures
+ * Convert temporal sections to notation measures, splitting notes that cross
+ * measure boundaries and linking the segments with ties.
  */
 function sectionsToMeasures(
   sections: TemporalSection[],
@@ -67,30 +77,40 @@ function sectionsToMeasures(
 ): NotationMeasure[] {
   const notationMeasures: NotationMeasure[] = [];
   let previousKeySignature: KeySignature | undefined;
+  let carryOver: CarryOverNote[] = [];
 
   for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
     const section = sections[sectionIndex];
     const isFirstSection = sectionIndex === 0;
-    const keySignatureChanged = !previousKeySignature || 
-      previousKeySignature.fifths !== section.keySignature.fifths || 
+    const keySignatureChanged = !previousKeySignature ||
+      previousKeySignature.fifths !== section.keySignature.fifths ||
       previousKeySignature.mode !== section.keySignature.mode;
-    
+
     for (let measureIndex = 0; measureIndex < section.measures.length; measureIndex++) {
       const temporalMeasure = section.measures[measureIndex];
       const isFirstMeasureInSection = measureIndex === 0;
-      
-      const notationMeasure = convertMeasure(
-        temporalMeasure, 
-        section, 
-        isFirstMeasureInSection && !isFirstSection, // Mark section start (except for the very first section)
-        isFirstMeasureInSection && keySignatureChanged, // Show key signature if changed
-        isFirstMeasureInSection, // Show time signature and tempo on first measure
-        pulsesPerQuarterNote
+
+      const { notes, newCarryOver } = convertNotesWithCarryOver(
+        temporalMeasure.notes,
+        temporalMeasure.startTick,
+        temporalMeasure.endTick,
+        carryOver,
+        pulsesPerQuarterNote,
+        section.keySignature.fifths
       );
-      
-      notationMeasures.push(notationMeasure);
+
+      carryOver = newCarryOver;
+
+      notationMeasures.push({
+        number: temporalMeasure.number,
+        timeSignature: isFirstMeasureInSection ? section.timeSignature : undefined,
+        keySignature: isFirstMeasureInSection && keySignatureChanged ? section.keySignature : undefined,
+        tempo: isFirstMeasureInSection && section.tempo ? section.tempo : undefined,
+        sectionStart: (isFirstMeasureInSection && !isFirstSection) || undefined,
+        notes
+      });
     }
-    
+
     previousKeySignature = section.keySignature;
   }
 
@@ -98,68 +118,92 @@ function sectionsToMeasures(
 }
 
 /**
- * Convert a single temporal measure to a notation measure
+ * Convert MIDI notes for one measure, injecting carry-over tied notes from
+ * the previous measure and producing new carry-overs for the next measure.
+ *
+ * Notes whose end tick exceeds measureEndTick are split:
+ *   - the portion within this measure gets tie=start
+ *   - the remainder is kept in newCarryOver with tie=stop (or tie=continue
+ *     if it still overflows the next measure)
  */
-function convertMeasure(
-  temporalMeasure: TemporalMeasure,
-  section: TemporalSection,
-  isSectionStart: boolean,
-  showKeySignature: boolean,
-  isFirstMeasure: boolean,
-  pulsesPerQuarterNote: number
-): NotationMeasure {
-
-  // Sort and convert notes
-  const notes = convertNotes(temporalMeasure.notes, pulsesPerQuarterNote, section.keySignature.fifths);
-
-  return {
-    number: temporalMeasure.number,
-    timeSignature: isFirstMeasure ? section.timeSignature : undefined,
-    keySignature: showKeySignature ? section.keySignature : undefined,
-    tempo: isFirstMeasure && section.tempo ? section.tempo : undefined,
-    sectionStart: isSectionStart || undefined,
-    notes
-  };
-}
-
-/**
- * Convert and sort MIDI notes to notation notes
- */
-function convertNotes(
+function convertNotesWithCarryOver(
   midiNotes: MidiNote[],
-  pulsesPerQuarterNote: number,
-  fifths: number = 0
-): NotationNote[] {
-  
-  if (midiNotes.length === 0) {
-    return [];
+  measureStartTick: number,
+  measureEndTick: number,
+  carryOver: CarryOverNote[],
+  ppq: number,
+  fifths: number
+): { notes: NotationNote[]; newCarryOver: CarryOverNote[] } {
+  const notes: NotationNote[] = [];
+  const newCarryOver: CarryOverNote[] = [];
+  const measureDuration = measureEndTick - measureStartTick;
+
+  // ── 1. Inject carry-over notes from the previous measure ──────────────────
+  for (const co of carryOver) {
+    if (co.remainingTicks <= measureDuration) {
+      // Fits entirely in this measure: tie stop
+      const { type, dots } = ticksToDuration(co.remainingTicks, ppq);
+      notes.push({
+        pitch: co.pitch,
+        type: type as NotationNote['type'],
+        dots,
+        startTick: measureStartTick,
+        durationTicks: co.remainingTicks,
+        tie: { type: 'stop' },
+      });
+    } else {
+      // Still overflows: tie continue (= stop + start in MusicXML)
+      const { type, dots } = ticksToDuration(measureDuration, ppq);
+      notes.push({
+        pitch: co.pitch,
+        type: type as NotationNote['type'],
+        dots,
+        startTick: measureStartTick,
+        durationTicks: measureDuration,
+        tie: { type: 'continue' },
+      });
+      newCarryOver.push({
+        pitch: co.pitch,
+        remainingTicks: co.remainingTicks - measureDuration,
+      });
+    }
   }
 
-  // Sort notes by start time
+  // ── 2. Process notes that start in this measure ────────────────────────────
   const sortedNotes = [...midiNotes].sort((a, b) => a.ticks - b.ticks);
 
-  const notes: NotationNote[] = [];
-
   for (const midiNote of sortedNotes) {
-    const noteStart = midiNote.ticks;
-    const noteDuration = midiNote.durationTicks;
-
-    // Convert MIDI to notation
     const pitch = midiToPitch(midiNote.midi, fifths);
-    const { type, dots } = ticksToDuration(noteDuration, pulsesPerQuarterNote);
+    const noteEndTick = midiNote.ticks + midiNote.durationTicks;
 
-    const notationNote: NotationNote = {
-      pitch,
-      type: type as NotationNote['type'],
-      dots,
-      startTick: noteStart,
-      durationTicks: noteDuration,
-    };
-    
-    notes.push(notationNote);
+    if (noteEndTick > measureEndTick) {
+      // Note crosses the measure boundary: split it
+      const segmentTicks = measureEndTick - midiNote.ticks;
+      const remainingTicks = noteEndTick - measureEndTick;
+      const { type, dots } = ticksToDuration(segmentTicks, ppq);
+      notes.push({
+        pitch,
+        type: type as NotationNote['type'],
+        dots,
+        startTick: midiNote.ticks,
+        durationTicks: segmentTicks,
+        tie: { type: 'start' },
+      });
+      newCarryOver.push({ pitch, remainingTicks });
+    } else {
+      // Normal note: no tie
+      const { type, dots } = ticksToDuration(midiNote.durationTicks, ppq);
+      notes.push({
+        pitch,
+        type: type as NotationNote['type'],
+        dots,
+        startTick: midiNote.ticks,
+        durationTicks: midiNote.durationTicks,
+      });
+    }
   }
 
-  return notes;
+  return { notes, newCarryOver };
 }
 
 /**

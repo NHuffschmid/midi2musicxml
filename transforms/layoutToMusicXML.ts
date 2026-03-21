@@ -295,9 +295,22 @@ function convertNote(
   const dotMultiplier = note.dots === 1 ? 1.5 : note.dots === 2 ? 1.75 : 1;
   const duration = Math.round(divisions * factor * dotMultiplier);
 
-  // Build notations if needed (articulations, etc.)
-  const notations = note.articulation ? {
-    articulations: [{ type: note.articulation }]
+  // Build notations if needed (ties, articulations, etc.)
+  let tieElements: Array<{ type: 'start' | 'stop' }> | undefined;
+  let tiedNotations: Array<{ type: 'start' | 'stop' }> | undefined;
+  if (note.tie) {
+    if (note.tie.type === 'continue') {
+      tieElements    = [{ type: 'stop' }, { type: 'start' }];
+      tiedNotations  = [{ type: 'stop' }, { type: 'start' }];
+    } else {
+      tieElements    = [{ type: note.tie.type }];
+      tiedNotations  = [{ type: note.tie.type }];
+    }
+  }
+  const articulationArr = note.articulation ? [{ type: note.articulation }] : undefined;
+  const notations = (tiedNotations || articulationArr) ? {
+    ...(tiedNotations  ? { tied: tiedNotations }              : {}),
+    ...(articulationArr ? { articulations: articulationArr } : {}),
   } : undefined;
 
   return {
@@ -310,6 +323,7 @@ function convertNote(
     type: note.type,
     dot: note.dots > 0 ? note.dots : undefined,
     chord: note.isChord || undefined, // Set chord flag if this is a chord note
+    tie: tieElements,
     notations,
     startTick: note.startTick
     // Note: staff property is added later in convertMeasure after sorting
