@@ -163,7 +163,12 @@ export function resolveStaccato(notes: NoteElement[], divisions: number, tempoBp
     for (let i = 0; i < group.length - 1; i++) {
       const note     = group[i];
       const nextNote = group[i + 1];
-      const gap      = nextNote.startTick - (note.startTick + note.duration);
+
+      // Tuplet notes must not be altered: the gap between consecutive triplet
+      // notes is an artefact of the tuplet ratio, not a staccato indication.
+      if (note.timeModification || nextNote.timeModification) continue;
+
+      const gap = nextNote.startTick - (note.startTick + note.duration);
 
       if (gap > 0 && gap <= note.duration) {
         const newDuration    = note.duration + gap;

@@ -349,6 +349,14 @@ function serializeNote(note: NoteElement): string {
     }
   }
 
+  // Time modification (present on every note of a tuplet group, e.g. triplets)
+  if (note.timeModification) {
+    xml += `        <time-modification>\n`;
+    xml += `          <actual-notes>${note.timeModification.actualNotes}</actual-notes>\n`;
+    xml += `          <normal-notes>${note.timeModification.normalNotes}</normal-notes>\n`;
+    xml += `        </time-modification>\n`;
+  }
+
   // Notations
   if (note.notations) {
     xml += `        <notations>\n`;

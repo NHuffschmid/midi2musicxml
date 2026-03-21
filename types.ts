@@ -20,6 +20,14 @@ export type MidiNote = {
   velocity: number;
   bars: number;
   tempo?: number;
+  /** Set by detectTuplets() when the note belongs to a tuplet group. */
+  tuplet?: {
+    actualNotes: number;  // e.g. 3 for a triplet
+    normalNotes: number;  // e.g. 2 for a triplet
+    noteType: string;     // base note type, e.g. 'eighth', 'quarter'
+    groupId: string;      // unique ID shared by all notes in the group
+    position: number;     // 1-based position within the group
+  };
 }
 
 export type MidiMeasure = {

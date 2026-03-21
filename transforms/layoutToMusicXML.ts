@@ -21,7 +21,9 @@ import {
   NoteElement,
   Direction,
   Clef,
-  Beam
+  Beam,
+  Tuplet,
+  TimeModification
 } from '../models/MusicXMLModel';
 
 export interface LayoutToMusicXMLOptions {
@@ -293,9 +295,13 @@ function convertNote(
   };
   const factor = typeToFactor[note.type] ?? 1;
   const dotMultiplier = note.dots === 1 ? 1.5 : note.dots === 2 ? 1.75 : 1;
-  const duration = Math.round(divisions * factor * dotMultiplier);
+  // For tuplet notes multiply by the ratio normalNotes/actualNotes (e.g. ×2/3 for triplets).
+  const tupletRatio = note.tuplet
+    ? note.tuplet.normalNotes / note.tuplet.actualNotes
+    : 1;
+  const duration = Math.round(divisions * factor * dotMultiplier * tupletRatio);
 
-  // Build notations if needed (ties, articulations, etc.)
+  // Build notations if needed (ties, articulations, tuplet brackets)
   let tieElements: Array<{ type: 'start' | 'stop' }> | undefined;
   let tiedNotations: Array<{ type: 'start' | 'stop' }> | undefined;
   if (note.tie) {
@@ -308,10 +314,27 @@ function convertNote(
     }
   }
   const articulationArr = note.articulation ? [{ type: note.articulation }] : undefined;
-  const notations = (tiedNotations || articulationArr) ? {
-    ...(tiedNotations  ? { tied: tiedNotations }              : {}),
+
+  // Tuplet bracket notations: only on primary (non-chord) notes, only at group
+  // start (position 1) and group end (position === actualNotes).
+  let tupletBracket: Tuplet[] | undefined;
+  if (note.tuplet && !note.isChord) {
+    if (note.tuplet.position === 1) {
+      tupletBracket = [{ type: 'start', bracket: true, number: 1, showNumber: 'actual' }];
+    } else if (note.tuplet.position === note.tuplet.actualNotes) {
+      tupletBracket = [{ type: 'stop', number: 1 }];
+    }
+  }
+
+  const notations = (tiedNotations || articulationArr || tupletBracket) ? {
+    ...(tiedNotations   ? { tied:          tiedNotations  } : {}),
     ...(articulationArr ? { articulations: articulationArr } : {}),
+    ...(tupletBracket   ? { tuplet:        tupletBracket  } : {}),
   } : undefined;
+
+  const timeModification: TimeModification | undefined = note.tuplet
+    ? { actualNotes: note.tuplet.actualNotes, normalNotes: note.tuplet.normalNotes }
+    : undefined;
 
   return {
     pitch: {
@@ -325,6 +348,7 @@ function convertNote(
     chord: note.isChord || undefined, // Set chord flag if this is a chord note
     tie: tieElements,
     notations,
+    timeModification,
     startTick: note.startTick
     // Note: staff property is added later in convertMeasure after sorting
   };

@@ -116,9 +116,15 @@ export interface NoteElement {
   chord?: boolean; // True if this note is part of a chord (not the first note)
   tie?: Array<{ type: 'start' | 'stop' }>; // Tie elements (stop before start for continue)
   notations?: Notations;
+  timeModification?: TimeModification; // Present on every note of a tuplet group
   staff?: number;
   startTick: number;
   beam?: Beam[];
+}
+
+export interface TimeModification {
+  actualNotes: number; // e.g. 3 for triplet
+  normalNotes: number; // e.g. 2 for triplet
 }
 
 export interface MusicXMLPitch {

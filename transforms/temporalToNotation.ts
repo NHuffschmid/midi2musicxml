@@ -20,11 +20,13 @@ import {
   NotationMeasure,
   NotationNote,
   Pitch,
-  TieInfo
+  TieInfo,
+  TupletGroupInfo
 } from '../models/NotationModel';
 
 import { MidiNote } from '../types';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
+import { detectTuplets } from '../utils/detectTuplets';
 
 export interface TemporalToNotationOptions {
   pulsesPerQuarterNote: number;
@@ -170,14 +172,22 @@ function convertNotesWithCarryOver(
   }
 
   // ── 2. Process notes that start in this measure ────────────────────────────
-  const sortedNotes = [...midiNotes].sort((a, b) => a.ticks - b.ticks);
+  // detectTuplets annotates the notes with tuplet group info before type-mapping.
+  // Running it per-measure prevents cross-measure false positives.
+  const sortedNotes = detectTuplets(
+    [...midiNotes].sort((a, b) => a.ticks - b.ticks),
+    ppq
+  );
 
   for (const midiNote of sortedNotes) {
     const pitch = midiToPitch(midiNote.midi, fifths);
     const noteEndTick = midiNote.ticks + midiNote.durationTicks;
 
     if (noteEndTick > measureEndTick) {
-      // Note crosses the measure boundary: split it
+      // Note crosses the measure boundary: split it.
+      // Tuplet info is intentionally not carried over to the tied segment
+      // because a triplet spanning a measure boundary is an edge case that
+      // cannot be cleanly expressed in standard MusicXML.
       const segmentTicks = measureEndTick - midiNote.ticks;
       const remainingTicks = noteEndTick - measureEndTick;
       const { type, dots } = ticksToDuration(segmentTicks, ppq);
@@ -191,14 +201,32 @@ function convertNotesWithCarryOver(
       });
       newCarryOver.push({ pitch, remainingTicks });
     } else {
-      // Normal note: no tie
-      const { type, dots } = ticksToDuration(midiNote.durationTicks, ppq);
+      // Normal note: no tie.
+      // When the note is part of a tuplet group, use the pre-determined note type
+      // directly instead of inferring it from the raw tick duration (which would
+      // produce a wrong result, e.g. "dotted 16th" for an eighth-note triplet).
+      const rawTuplet = midiNote.tuplet;
+      const { type, dots } = rawTuplet
+        ? { type: rawTuplet.noteType, dots: 0 }
+        : ticksToDuration(midiNote.durationTicks, ppq);
+
+      const tupletInfo: TupletGroupInfo | undefined = rawTuplet
+        ? {
+            actualNotes: rawTuplet.actualNotes,
+            normalNotes: rawTuplet.normalNotes,
+            noteType:    rawTuplet.noteType,
+            groupId:     rawTuplet.groupId,
+            position:    rawTuplet.position,
+          }
+        : undefined;
+
       notes.push({
         pitch,
         type: type as NotationNote['type'],
         dots,
         startTick: midiNote.ticks,
         durationTicks: midiNote.durationTicks,
+        tuplet: tupletInfo,
       });
     }
   }
