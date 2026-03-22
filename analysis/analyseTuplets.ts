@@ -1,4 +1,5 @@
 import { MidiNote } from '../types';
+import type { NoteType } from '../models/NotationModel';
 
 /**
  * Maximum tick gap between simultaneous notes (chords) in a live recording.
@@ -30,7 +31,7 @@ const PATTERN_TOLERANCE = 0.20;
 const DURATION_MAX_FACTOR = 2.0;
 
 interface TripletPattern {
-  noteType: string;
+  noteType: NoteType;
   /** Theoretical tick distance between consecutive notes in the group. */
   spacing: number;
 }
