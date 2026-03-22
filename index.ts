@@ -16,6 +16,7 @@ import {
 } from './debug';
 import xmlFormatter from 'xml-formatter';
 import { MidiNote } from './types';
+import { quantizeMidiNotes } from './utils/quantizeMidiNotes';
 
 // Re-export types for backwards compatibility
 export type { ClefType } from './types';
@@ -56,8 +57,11 @@ export function midi2MusicXML(
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
   if (midiNotes.length === 0) return { musicxml: '', noteCursorTicks: [] };
 
+  // Quantize ticks and durations (before TemporalModel)
+  const quantizedNotes: MidiNote[] = quantizeMidiNotes(midiNotes, pulsesPerQuarterNote);
+
   // Stage 2: MIDI → TemporalModel
-  const temporalScore = midiToTemporal(midiNotes, midi, {
+  const temporalScore = midiToTemporal(quantizedNotes, midi, {
     title: scoreTitle,
     composer: scoreComposer,
     copyright
