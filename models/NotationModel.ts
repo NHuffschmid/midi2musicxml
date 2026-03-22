@@ -73,11 +73,11 @@ export interface TupletInfo {
 
 /** Tuplet membership metadata carried on individual notes through the pipeline. */
 export interface TupletGroupInfo {
-  actualNotes: number;  // e.g. 3 for triplet
-  normalNotes: number;  // e.g. 2 for triplet
-  noteType: string;     // base note type, e.g. 'eighth', 'quarter'
-  groupId: string;      // unique ID shared by all notes in the group
-  position: number;     // 1-based position within the group
+  actualNotes: number;            // e.g. 3 for triplet
+  normalNotes: number;            // e.g. 2 for triplet
+  noteType: NotationNote['type']; // base note type, e.g. 'eighth', 'quarter'
+  groupId: string;                // unique ID shared by all notes in the group
+  position: number;               // 1-based position within the group
 }
 
 export type ArticulationType = 'staccato' | 'tenuto' | 'accent' | 'staccatissimo';
