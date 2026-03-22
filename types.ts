@@ -20,7 +20,6 @@ export type MidiNote = {
   velocity: number;
   bars: number;
   tempo?: number;
-  /** Set by detectTuplets() when the note belongs to a tuplet group. */
   tuplet?: {
     actualNotes: number;  // e.g. 3 for a triplet
     normalNotes: number;  // e.g. 2 for a triplet

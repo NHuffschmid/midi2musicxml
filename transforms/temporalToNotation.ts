@@ -26,7 +26,7 @@ import {
 
 import { MidiNote } from '../types';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
-import { detectTuplets } from '../utils/detectTuplets';
+import { detectTuplets } from '../analysis/analyseTuplets';
 
 export interface TemporalToNotationOptions {
   pulsesPerQuarterNote: number;
