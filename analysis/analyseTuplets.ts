@@ -20,6 +20,15 @@ const EQUAL_TOLERANCE = 0.25;
  */
 const PATTERN_TOLERANCE = 0.20;
 
+/**
+ * Duration validity factor: a note is only annotated as a tuplet member when
+ * its durationTicks does not exceed this multiple of the detected pattern
+ * spacing.  Factor 2.0 accepts legato/pedal notes held well into the next
+ * position while rejecting notes that clearly belong to a larger note type
+ * (e.g. a quarter note at an eighth-triplet slot has duration ≈ 3× spacing).
+ */
+const DURATION_MAX_FACTOR = 2.0;
+
 interface TripletPattern {
   noteType: string;
   /** Theoretical tick distance between consecutive notes in the group. */
@@ -119,6 +128,10 @@ export function detectTuplets(notes: MidiNote[], ppq: number): MidiNote[] {
 
         for (let posIdx = 0; posIdx < 3; posIdx++) {
           for (const noteIdx of group[posIdx].noteIndices) {
+            // Skip notes whose duration is clearly incompatible with the
+            // detected tuplet note type (e.g. a half note at an eighth-triplet
+            // position).  This prevents wrong note-value assignments later.
+            if (notes[noteIdx].durationTicks > pattern.spacing * DURATION_MAX_FACTOR) continue;
             result[noteIdx] = {
               ...result[noteIdx],
               tuplet: {

@@ -129,7 +129,7 @@ function convertPianoPartToLayout(
     // This prevents extreme values in very high or very low passages
     const averageMidi = Math.max(52, Math.min(66, rawAverage));
     
-    // Group notes by staff
+    // Group notes by staff (initial pitch-based assignment)
     const staff1Notes: LayoutNote[] = [];
     const staff2Notes: LayoutNote[] = [];
     
@@ -143,7 +143,64 @@ function convertPianoPartToLayout(
         staff2Notes.push(layoutNote);
       }
     }
-    
+
+    // Keep tuplet groups together: if notes of a group were split across
+    // staves, move all of them to the staff that already holds the majority.
+    // Ties are broken by average pitch (>= averageMidi → staff 1).
+    const tupletGroupStaff1Count = new Map<string, number>();
+    const tupletGroupStaff2Count = new Map<string, number>();
+
+    for (const n of staff1Notes) {
+      if (n.tuplet?.groupId) {
+        tupletGroupStaff1Count.set(n.tuplet.groupId, (tupletGroupStaff1Count.get(n.tuplet.groupId) ?? 0) + 1);
+      }
+    }
+    for (const n of staff2Notes) {
+      if (n.tuplet?.groupId) {
+        tupletGroupStaff2Count.set(n.tuplet.groupId, (tupletGroupStaff2Count.get(n.tuplet.groupId) ?? 0) + 1);
+      }
+    }
+
+    // Determine which groups are split (appear in both staves)
+    const splitGroups = new Set<string>();
+    for (const groupId of tupletGroupStaff1Count.keys()) {
+      if (tupletGroupStaff2Count.has(groupId)) {
+        splitGroups.add(groupId);
+      }
+    }
+
+    if (splitGroups.size > 0) {
+      // For each split group decide the target staff, then rebuild the arrays.
+      const groupTargetStaff = new Map<string, 1 | 2>();
+      for (const groupId of splitGroups) {
+        const c1 = tupletGroupStaff1Count.get(groupId) ?? 0;
+        const c2 = tupletGroupStaff2Count.get(groupId) ?? 0;
+        if (c1 >= c2) {
+          groupTargetStaff.set(groupId, 1);
+        } else {
+          groupTargetStaff.set(groupId, 2);
+        }
+      }
+
+      // Remove misplaced notes from staff1 → staff2
+      const toMoveToStaff2 = staff1Notes.filter(
+        n => n.tuplet?.groupId && groupTargetStaff.get(n.tuplet.groupId) === 2
+      );
+      for (const n of toMoveToStaff2) {
+        staff1Notes.splice(staff1Notes.indexOf(n), 1);
+        staff2Notes.push(n);
+      }
+
+      // Remove misplaced notes from staff2 → staff1
+      const toMoveToStaff1 = staff2Notes.filter(
+        n => n.tuplet?.groupId && groupTargetStaff.get(n.tuplet.groupId) === 1
+      );
+      for (const n of toMoveToStaff1) {
+        staff2Notes.splice(staff2Notes.indexOf(n), 1);
+        staff1Notes.push(n);
+      }
+    }
+
     // Detect chords within each staff
     const staff1NotesWithChords = detectChordsInStaff(staff1Notes);
     const staff2NotesWithChords = detectChordsInStaff(staff2Notes);
