@@ -146,7 +146,7 @@ function convertPianoPartToLayout(
 
     // Keep tuplet groups together: if notes of a group were split across
     // staves, move all of them to the staff that already holds the majority.
-    // Ties are broken by average pitch (>= averageMidi → staff 1).
+    // Ties are broken in favor of staff 1.
     const tupletGroupStaff1Count = new Map<string, number>();
     const tupletGroupStaff2Count = new Map<string, number>();
 
