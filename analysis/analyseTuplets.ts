@@ -69,20 +69,20 @@ export function detectTuplets(notes: MidiNote[], ppq: number): MidiNote[] {
     { noteType: '16th',    spacing: ppq / 6 },      // 16th-note triplets
   ];
 
-  // ── Step 1: Build beat positions ─────────────────────────────────────────
-  // Each position holds the indices into `notes` that belong to it plus the
-  // canonical tick (first note) and the last-seen tick (for tolerance checks).
-  const positions: { tick: number; lastTick: number; noteIndices: number[] }[] = [];
 
+  // ── Step 1: Build beat positions (only primary note per chord) ──────────
+  // Only the first note of each chord group (by tick) is used for tuplet detection.
+  // All notes within CHORD_TICK_TOLERANCE are still annotated if a tuplet is found.
+  const positions: { tick: number; lastTick: number; noteIndices: number[]; primaryIdx: number }[] = [];
   for (let i = 0; i < notes.length; i++) {
     const tick = notes[i].ticks;
     const last = positions[positions.length - 1];
-
     if (positions.length === 0 || tick - last.lastTick > CHORD_TICK_TOLERANCE) {
-      positions.push({ tick, lastTick: tick, noteIndices: [i] });
+      positions.push({ tick, lastTick: tick, noteIndices: [i], primaryIdx: i });
     } else {
       last.lastTick = tick;
       last.noteIndices.push(i);
+      // Do NOT update primaryIdx: only the first note is primary
     }
   }
 
@@ -97,8 +97,12 @@ export function detectTuplets(notes: MidiNote[], ppq: number): MidiNote[] {
     const p2 = positions[pi + 1];
     const p3 = positions[pi + 2];
 
-    const interval1 = p2.tick - p1.tick;
-    const interval2 = p3.tick - p2.tick;
+    // Use only the primary note of each position for interval calculation
+    const t1 = notes[p1.primaryIdx].ticks;
+    const t2 = notes[p2.primaryIdx].ticks;
+    const t3 = notes[p3.primaryIdx].ticks;
+    const interval1 = t2 - t1;
+    const interval2 = t3 - t2;
     const avgInterval = (interval1 + interval2) / 2;
 
     if (avgInterval <= 0) { pi++; continue; }
@@ -110,7 +114,7 @@ export function detectTuplets(notes: MidiNote[], ppq: number): MidiNote[] {
     let matched = false;
     for (const pattern of patterns) {
       if (Math.abs(avgInterval - pattern.spacing) / pattern.spacing <= PATTERN_TOLERANCE) {
-        const groupId = `tuplet-${p1.tick}-${p1.noteIndices[0]}`;
+        const groupId = `tuplet-${t1}-${p1.primaryIdx}`;
         const group   = [p1, p2, p3];
 
         for (let posIdx = 0; posIdx < 3; posIdx++) {
