@@ -38,9 +38,11 @@ export interface NotationMeasure {
   sectionStart?: boolean;
 }
 
+export type NoteType = 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
+
 export interface NotationNote {
   pitch: Pitch;
-  type: 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
+  type: NoteType;
   dots: number;           // 0, 1, 2, 3
   startTick: number;      // Start position in MIDI ticks (preserved from MusicalModel)
   durationTicks: number;  // Exact duration in ticks (preserved from MusicalModel)
@@ -56,7 +58,7 @@ export interface Pitch {
 }
 
 export interface NoteDuration {
-  type: 'whole' | 'half' | 'quarter' | 'eighth' | '16th' | '32nd' | '64th' | '128th';
+  type: NoteType;
   dots: number; // 0, 1, 2, 3
 }
 
@@ -75,7 +77,7 @@ export interface TupletInfo {
 export interface TupletGroupInfo {
   actualNotes: number;            // e.g. 3 for triplet
   normalNotes: number;            // e.g. 2 for triplet
-  noteType: NotationNote['type']; // base note type, e.g. 'eighth', 'quarter'
+  noteType: NoteType;             // base note type, e.g. 'eighth', 'quarter'
   groupId: string;                // unique ID shared by all notes in the group
   position: number;               // 1-based position within the group
 }

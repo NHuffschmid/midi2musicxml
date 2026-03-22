@@ -5,6 +5,8 @@
  * before conversion to the new model architecture.
  */
 
+import type { NoteType } from './models/NotationModel';
+
 // Instrument types (for backward compatibility)
 export const ClefTypes = ['piano', 'violin', 'viola', 'cello'] as const;
 export type ClefType = typeof ClefTypes[number];
@@ -23,7 +25,7 @@ export type MidiNote = {
   tuplet?: {
     actualNotes: number;  // e.g. 3 for a triplet
     normalNotes: number;  // e.g. 2 for a triplet
-    noteType: string;     // base note type, e.g. 'eighth', 'quarter'
+    noteType: NoteType;   // base note type, e.g. 'eighth', 'quarter'
     groupId: string;      // unique ID shared by all notes in the group
     position: number;     // 1-based position within the group
   };
