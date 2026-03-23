@@ -2,6 +2,7 @@
  * Pipeline Transforms - All transformation steps
  */
 
+export * from './midiToQuantized';
 export * from './midiToTemporal';
 export * from './temporalToNotation';
 export * from './notationToLayout';

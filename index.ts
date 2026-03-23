@@ -3,12 +3,14 @@ import { analyzeTitle } from './analysis/analyzeTitle';
 import { analyzeComposer } from './analysis/analyzeComposer';
 import { analyzeCopyright } from './analysis/analyzeCopyright';
 import { collectMidiNotes } from './utils/collectMidiNotes';
+import { midiToQuantized } from './transforms/midiToQuantized';
 import { midiToTemporal } from './transforms/midiToTemporal';
 import { temporalToNotation } from './transforms/temporalToNotation';
 import { notationToLayout, InstrumentType } from './transforms/notationToLayout';
 import { layoutToMusicXML } from './transforms/layoutToMusicXML';
 import { musicXMLToString } from './transforms/musicXMLToString';
 import {
+  dumpQuantizedModel, prettyPrintQuantizedModel,
   dumpTemporalModel, prettyPrintTemporalModel,
   dumpNotationModel, prettyPrintNotationModel,
   dumpLayoutModel, prettyPrintLayoutModel,
@@ -16,7 +18,6 @@ import {
 } from './debug';
 import xmlFormatter from 'xml-formatter';
 import { MidiNote } from './types';
-import { quantizeMidiNotes } from './utils/quantizeMidiNotes';
 
 // Re-export types for backwards compatibility
 export type { ClefType } from './types';
@@ -33,14 +34,18 @@ export interface Midi2MusicResult {
 }
 
 /**
- * Convert MIDI to MusicXML using 6-stage pipeline architecture:
- * 
- * Stage 1: MIDI (tonejs) - Raw MIDI data
- * Stage 2: TemporalModel - Time-based structure (sections, measures)
- * Stage 3: NotationModel - Notation decisions (duration types, pitches)
- * Stage 4: LayoutModel - Layout decisions (staff assignment)
- * Stage 5: MusicXMLModel - MusicXML DOM structure
- * Stage 6: XML String - Serialized output
+ * Convert MIDI to MusicXML using a 7-stage pipeline architecture:
+ *
+ * Stage 1:   MIDI (tonejs) - Raw MIDI data
+ * Stage 1.5: QuantizedModel - Optional quantization for live-recorded MIDI.
+ *            Score-derived files (already on a tick grid) pass through unchanged.
+ *            Live recordings are quantized so downstream stages produce
+ *            meaningful notation.
+ * Stage 2:   TemporalModel - Time-based structure (sections, measures)
+ * Stage 3:   NotationModel - Notation decisions (duration types, pitches)
+ * Stage 4:   LayoutModel - Layout decisions (staff assignment)
+ * Stage 5:   MusicXMLModel - MusicXML DOM structure
+ * Stage 6:   XML String - Serialized output
  */
 export function midi2MusicXML(
   midi: Midi,
@@ -57,11 +62,15 @@ export function midi2MusicXML(
   const midiNotes: MidiNote[] = collectMidiNotes(midi);
   if (midiNotes.length === 0) return { musicxml: '', noteCursorTicks: [] };
 
-  // Quantize ticks and durations (before TemporalModel)
-  const quantizedNotes: MidiNote[] = quantizeMidiNotes(midiNotes, pulsesPerQuarterNote);
+  // Stage 1.5: MidiNote[] → QuantizedScore
+  // Detects whether the input is score-derived (already on the tick grid) or
+  // live-recorded (needs quantization).  Only live-recorded data is modified.
+  const quantizedScore = midiToQuantized(midiNotes, pulsesPerQuarterNote);
+  const quantizedDump = dumpQuantizedModel(quantizedScore);
+  const quantizedPrettyPrint = prettyPrintQuantizedModel(quantizedScore);
 
-  // Stage 2: MIDI → TemporalModel
-  const temporalScore = midiToTemporal(quantizedNotes, midi, {
+  // Stage 2: QuantizedScore → TemporalModel
+  const temporalScore = midiToTemporal(quantizedScore.notes, midi, {
     title: scoreTitle,
     composer: scoreComposer,
     copyright
