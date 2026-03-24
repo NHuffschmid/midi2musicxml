@@ -135,17 +135,20 @@ export function midiToQuantized(
   // Live-recording: 4-step processing pipeline.
 
   // Step A: Estimate global tempo via IOI histogram.
-  const estimatedBpm = estimateGlobalTempo(notes);
-  console.log(`midiToQuantized: estimated global tempo = ${estimatedBpm} BPM`);
+  const estimatedBpmIOI = estimateGlobalTempo(notes);
+  console.log(`midiToQuantized: estimated global tempo = ${estimatedBpmIOI} BPM`);
 
   // Step B: Build window-based tempo map (±10 % around globalBpm).
   const referenceBpm = notes[0].tempo ?? 120;
   const beatsPerMeasure = options.beatsPerMeasure ?? 4;
-  const tempoMap = buildTempoMap(notes, estimatedBpm, ppq, beatsPerMeasure, referenceBpm);
+  const tempoMap = buildTempoMap(notes, estimatedBpmIOI, ppq, beatsPerMeasure, referenceBpm);
+  const bpmValues = tempoMap.map(e => e.bpm);
+  const meanTempoMapBpm = bpmValues.length > 0 ? bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length : estimatedBpmIOI;
+  const meanTempoMapBpmRounded = Math.round(meanTempoMapBpm);
   console.log(
     `midiToQuantized: tempoMap has ${tempoMap.length} window(s), ` +
-    `BPM range [${Math.min(...tempoMap.map(e => e.bpm)).toFixed(1)}, ` +
-    `${Math.max(...tempoMap.map(e => e.bpm)).toFixed(1)}]`
+    `BPM range [${Math.min(...bpmValues).toFixed(1)}, ` +
+    `${Math.max(...bpmValues).toFixed(1)}], mean=${meanTempoMapBpm.toFixed(2)}, rounded=${meanTempoMapBpmRounded}`
   );
 
   // Step C: Apply tempo map — rescale ticks to approximate the beat grid.
@@ -153,6 +156,9 @@ export function midiToQuantized(
 
   // Step D: Snap residual offsets to the quantization grid.
   const quantizedNotes = quantizeMidiNotes(remappedNotes, ppq, gridDivisor);
+
+  // Use the mean of the tempo map as estimatedBpm if available, otherwise use IOI estimation
+  const estimatedBpm = bpmValues.length > 0 ? meanTempoMapBpmRounded : estimatedBpmIOI;
 
   return {
     notes: quantizedNotes,
