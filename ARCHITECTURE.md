@@ -38,7 +38,7 @@ This stage is **only active for live-recorded MIDI** — score-derived files pas
 
 A MIDI file is classified as *score-derived* when the fraction of notes whose `ticks`
 and `durationTicks` are exact multiples of the quantization grid (`ppq / 24`) meets or
-exceeds the detection threshold (default **80 %**).
+exceeds the detection threshold (default **50 %**).
 
 #### Sub-steps for live-recorded input
 
