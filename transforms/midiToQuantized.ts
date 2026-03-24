@@ -29,6 +29,7 @@
 import { MidiNote } from '../types';
 import { QuantizedScore } from '../models/QuantizedModel';
 import { quantizeMidiNotes } from '../utils/quantizeMidiNotes';
+import { estimateGlobalTempo } from '../utils/estimateGlobalTempo';
 
 /** Default quantization grid: ppq / 24 covers all values down to 32nds + triplets. */
 const DEFAULT_GRID_DIVISOR = 24;
@@ -112,8 +113,11 @@ export function midiToQuantized(
     };
   }
 
-  // Live-recording: align ticks and durations to the grid.
+  // Live-recording: estimate global tempo, then align ticks to the grid.
+  const estimatedBpm = estimateGlobalTempo(notes);
   const quantizedNotes = quantizeMidiNotes(notes, ppq, gridDivisor);
+
+  console.log(`midiToQuantized: estimated global tempo = ${estimatedBpm} BPM`);
 
   return {
     notes: quantizedNotes,
@@ -121,6 +125,7 @@ export function midiToQuantized(
     wasQuantized: true,
     gridDivisor,
     gridTicks,
-    gridAlignmentRatio
+    gridAlignmentRatio,
+    estimatedBpm
   };
 }

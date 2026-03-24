@@ -2,28 +2,75 @@
 
 ## Overview
 
-This module converts MIDI files to MusicXML format using a **6-stage pipeline architecture**. Each stage transforms the data through increasingly refined models, making the conversion process modular, testable, and maintainable.
+This module converts MIDI files to MusicXML format using a **7-stage pipeline architecture** (Stage 1.5 is optional and only active for live-recorded MIDI). Each stage transforms the data through increasingly refined models, making the conversion process modular, testable, and maintainable.
 
 ## Pipeline Stages
 
 ```
-MIDI (tonejs)
+Stage 1:   MIDI (tonejs)          ← raw MIDI data
     ↓
-Stage 2: TemporalModel
+Stage 1.5: QuantizedModel         ← optional: live-recording detection +
+    ↓                                tempo estimation + grid quantization
+    ↓                                (score-derived files pass through unchanged)
+Stage 2:   TemporalModel
     ↓
-Stage 3: NotationModel
+Stage 3:   NotationModel
     ↓
-Stage 4: LayoutModel
+Stage 4:   LayoutModel
     ↓
-Stage 5: MusicXMLModel
+Stage 5:   MusicXMLModel
     ↓
-Stage 6: XML String
+Stage 6:   XML String
 ```
 
 ### Stage 1: MIDI Data (Input)
 - **Format**: `tonejs/midi` library objects
 - **Content**: Raw MIDI events, notes, tempo changes
 - **Location**: External library
+- **Utility**: `utils/collectMidiNotes.ts` — reads all tracks, sorts by onset tick, assigns per-note tempo from header
+
+### Stage 1.5: QuantizedModel (optional)
+
+Inserted between raw MIDI data (Stage 1) and the TemporalModel (Stage 2).  
+This stage is **only active for live-recorded MIDI** — score-derived files pass through unchanged.
+
+#### Detection
+
+A MIDI file is classified as *score-derived* when the fraction of notes whose `ticks`
+and `durationTicks` are exact multiples of the quantization grid (`ppq / 24`) meets or
+exceeds the detection threshold (default **80 %**).
+
+#### Sub-steps for live-recorded input
+
+**Step A — Global tempo estimation (IOI histogram)**
+
+1. Extract note onset times (seconds), deduplicate chord notes within a 20 ms window.
+2. Compute consecutive **Inter-Onset Intervals (IOIs)**.
+3. Filter IOIs to the musical beat range **[0.25 s, 1.5 s]** (= [40 BPM, 240 BPM]).
+4. Build a histogram (20 ms bins) and find the dominant peak — the most common IOI,
+   which approximates the beat period `T`.
+5. Test candidate beat periods: `T × {0.5, 1, 2}` (half-beat, beat, two-beat).
+6. Select the candidate whose BPM falls in **[60, 180]**; if none qualifies, pick the
+   closest one. Round to the nearest musically natural value → stored as `estimatedBpm`.
+
+**Step B — Grid quantization**
+
+Onset ticks and duration ticks are snapped to the nearest multiple of the grid
+(`ppq / gridDivisor`, default divisor **24**). This covers all standard note values
+down to 32nd notes and triplet subdivisions (eighth-triplet = `ppq × 2/3`, etc.).
+
+#### Planned extensions (Phase 2)
+
+- **Tempo-map construction**: divide the piece into windows of ~4 measures; minimise
+  mean-square quantization error per window by adjusting local BPM; interpolate
+  between windows with a smooth spline; maximum deviation ±10 % of global BPM.
+- **Beat-grid alignment**: shift onset ticks to minimise distance to the nearest beat
+  boundary after tempo-map application.
+
+- **Model**: `models/QuantizedModel.ts`
+- **Transform**: `transforms/midiToQuantized.ts`
+- **Utilities**: `utils/estimateGlobalTempo.ts`, `utils/quantizeMidiNotes.ts`
+- **Key type**: `QuantizedScore` — carries `notes`, `wasQuantized`, `gridAlignmentRatio`, `estimatedBpm?`
 
 ### Stage 2: TemporalModel
 - **Purpose**: Time-based structure analysis
@@ -124,12 +171,14 @@ Each step is a pure function and can be unit-tested independently.
 ```
 midi2musicxml/
 ├── models/              # Type definitions for each pipeline stage
+│   ├── QuantizedModel.ts  ← Stage 1.5 model
 │   ├── TemporalModel.ts
 │   ├── NotationModel.ts
 │   ├── LayoutModel.ts
 │   ├── MusicXMLModel.ts
 │   └── index.ts
 ├── transforms/          # Transformation functions between stages
+│   ├── midiToQuantized.ts     ← Stage 1.5: detection + IOI tempo estimation + quantization
 │   ├── midiToTemporal.ts
 │   ├── temporalToNotation.ts
 │   ├── notationToLayout.ts
@@ -146,8 +195,11 @@ midi2musicxml/
 │   └── analyzeTempo.ts
 ├── utils/               # Helper functions
 │   ├── collectMidiNotes.ts
+│   ├── quantizeMidiNotes.ts
+│   ├── estimateGlobalTempo.ts ← IOI-based BPM estimation (Stage 1.5)
 │   └── midiTicksToXmlDurationType.ts
 ├── debug/               # Debug and testing utilities
+│   ├── dumpQuantizedModel.ts
 │   ├── dumpTemporalModel.ts
 │   ├── dumpNotationModel.ts
 │   ├── dumpLayoutModel.ts    ← outputs chord (isChord) per note

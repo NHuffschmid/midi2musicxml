@@ -43,4 +43,12 @@ export interface QuantizedScore {
    * for debugging / transparency.
    */
   gridAlignmentRatio: number;
+
+  /**
+   * Estimated global tempo in BPM, derived from IOI histogram analysis.
+   * Only present for live-recorded input (`wasQuantized === true`).
+   * For score-derived input, the MIDI header tempo is authoritative and
+   * this field is `undefined`.
+   */
+  estimatedBpm?: number;
 }
