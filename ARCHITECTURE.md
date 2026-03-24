@@ -53,24 +53,38 @@ exceeds the detection threshold (default **50 %**).
 6. Select the candidate whose BPM falls in **[60, 180]**; if none qualifies, pick the
    closest one. Round to the nearest musically natural value → stored as `estimatedBpm`.
 
-**Step B — Grid quantization**
+**Step B — Tempo-map construction**
+
+1. Divide the piece into windows of **4 measures** (in original tick space).
+2. For each window, search over BPM candidates in `[globalBpm × 0.9, globalBpm × 1.1]`
+   using 80 evenly-spaced steps.
+3. For each candidate BPM, compute the scale factor `bpm / referenceBpm` and evaluate
+   the **mean-square distance** of rescaled ticks to the nearest beat-grid position
+   (multiple of `ppq`).
+4. The candidate with the lowest MSE becomes the local BPM for that window.
+5. Windows with fewer than 4 notes fall back to `globalBpm`.
+6. Result: a sorted `TempoMapEntry[]` array — one entry per window.
+
+**Step C — Tempo-map application**
+
+For each note, the local BPM at its original tick is **linearly interpolated** from the
+tempo map.  Ticks and durationTicks are multiplied by `localBpm / referenceBpm`.
+The real-time fields (`time`, `duration` in seconds) remain unchanged — they are used
+only for pause-based section detection in Stage 2.
+
+**Step D — Grid quantization**
 
 Onset ticks and duration ticks are snapped to the nearest multiple of the grid
-(`ppq / gridDivisor`, default divisor **24**). This covers all standard note values
-down to 32nd notes and triplet subdivisions (eighth-triplet = `ppq × 2/3`, etc.).
-
-#### Planned extensions (Phase 2)
-
-- **Tempo-map construction**: divide the piece into windows of ~4 measures; minimise
-  mean-square quantization error per window by adjusting local BPM; interpolate
-  between windows with a smooth spline; maximum deviation ±10 % of global BPM.
-- **Beat-grid alignment**: shift onset ticks to minimise distance to the nearest beat
-  boundary after tempo-map application.
+(`ppq / gridDivisor`, default divisor **24**). This removes any residual offset
+left after Step C and covers all standard note values down to 32nd notes and
+triplet subdivisions (eighth-triplet = `ppq × 2/3`, etc.).
 
 - **Model**: `models/QuantizedModel.ts`
 - **Transform**: `transforms/midiToQuantized.ts`
-- **Utilities**: `utils/estimateGlobalTempo.ts`, `utils/quantizeMidiNotes.ts`
-- **Key type**: `QuantizedScore` — carries `notes`, `wasQuantized`, `gridAlignmentRatio`, `estimatedBpm?`
+- **Utilities**: `utils/estimateGlobalTempo.ts`, `utils/buildTempoMap.ts`,
+  `utils/applyTempoMap.ts`, `utils/quantizeMidiNotes.ts`
+- **Key types**: `QuantizedScore` — carries `notes`, `wasQuantized`, `gridAlignmentRatio`,
+  `estimatedBpm?`, `tempoMap?`; `TempoMapEntry` — `{ startTick, bpm }`
 
 ### Stage 2: TemporalModel
 - **Purpose**: Time-based structure analysis
@@ -196,7 +210,9 @@ midi2musicxml/
 ├── utils/               # Helper functions
 │   ├── collectMidiNotes.ts
 │   ├── quantizeMidiNotes.ts
-│   ├── estimateGlobalTempo.ts ← IOI-based BPM estimation (Stage 1.5)
+│   ├── estimateGlobalTempo.ts ← IOI-based BPM estimation (Stage 1.5 Step A)
+│   ├── buildTempoMap.ts       ← Window-based tempo map (Stage 1.5 Step B)
+│   ├── applyTempoMap.ts       ← Tick rescaling (Stage 1.5 Step C)
 │   └── midiTicksToXmlDurationType.ts
 ├── debug/               # Debug and testing utilities
 │   ├── dumpQuantizedModel.ts

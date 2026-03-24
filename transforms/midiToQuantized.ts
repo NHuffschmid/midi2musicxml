@@ -8,28 +8,42 @@
  * -------------------
  * A MIDI file is considered *already quantized* when the fraction of notes
  * whose ticks and durationTicks are exact multiples of the quantization grid
- * meets or exceeds `detectionThreshold` (default 0.90 = 90 %).
+ * meets or exceeds `detectionThreshold` (default 50 %).
  *
  * For a grid of ppq/24:
  *   - All standard note values down to 32nd notes are exact multiples.
  *   - Triplet subdivisions (eighth-triplet = ppq*2/3, etc.) are also exact.
- *   - Only exotic values like 64th notes (ppq/16 not divisible by ppq/24 in
- *     general) would fall off the grid — hence the 90 % threshold rather
- *     than 100 %.
  *
- * Future extensions
- * -----------------
- * This transform is the intended place for:
- *   - Tempo-map optimisation (shifting tempos so notes fit bar lines)
- *   - Beat-grid alignment (adjusting timestamps to minimise offset from
- *     the nearest beat/subdivision)
- *   - Swing/humanisation removal
+ * Live-recording processing pipeline
+ * ------------------------------------
+ * When live-recording is detected, the following sub-steps are applied:
+ *
+ *   Step A — Global tempo estimation (IOI histogram)
+ *     Analyses inter-onset intervals to find the dominant beat period and
+ *     derives a global BPM estimate.
+ *
+ *   Step B — Tempo-map construction
+ *     Divides the piece into windows of N measures (default 4) and finds the
+ *     local BPM per window that minimises mean-square distance of rescaled note
+ *     ticks to the nearest beat-grid position.  Deviation is capped at ±10 %
+ *     of the global BPM.  Adjacent windows are linearly interpolated.
+ *
+ *   Step C — Tempo-map application
+ *     Rescales each note's ticks and durationTicks by (localBpm / referenceBpm),
+ *     where referenceBpm is the tempo the recording software used (MIDI header).
+ *     After this step, note positions closely approximate the beat grid.
+ *
+ *   Step D — Grid quantization
+ *     Snaps residual offsets: rounds ticks and durationTicks to the nearest
+ *     multiple of the grid (ppq / gridDivisor).
  */
 
 import { MidiNote } from '../types';
 import { QuantizedScore } from '../models/QuantizedModel';
 import { quantizeMidiNotes } from '../utils/quantizeMidiNotes';
 import { estimateGlobalTempo } from '../utils/estimateGlobalTempo';
+import { buildTempoMap } from '../utils/buildTempoMap';
+import { applyTempoMap } from '../utils/applyTempoMap';
 
 /** Default quantization grid: ppq / 24 covers all values down to 32nds + triplets. */
 const DEFAULT_GRID_DIVISOR = 24;
@@ -52,6 +66,12 @@ export interface MidiToQuantizedOptions {
    * treated as already quantized.
    */
   detectionThreshold?: number;
+
+  /**
+   * Number of beats per measure, used for tempo-map window sizing.
+   * Default: 4 (4/4 time).
+   */
+  beatsPerMeasure?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -112,11 +132,27 @@ export function midiToQuantized(
     };
   }
 
-  // Live-recording: estimate global tempo, then align ticks to the grid.
-  const estimatedBpm = estimateGlobalTempo(notes);
-  const quantizedNotes = quantizeMidiNotes(notes, ppq, gridDivisor);
+  // Live-recording: 4-step processing pipeline.
 
+  // Step A: Estimate global tempo via IOI histogram.
+  const estimatedBpm = estimateGlobalTempo(notes);
   console.log(`midiToQuantized: estimated global tempo = ${estimatedBpm} BPM`);
+
+  // Step B: Build window-based tempo map (±10 % around globalBpm).
+  const referenceBpm = notes[0].tempo ?? 120;
+  const beatsPerMeasure = options.beatsPerMeasure ?? 4;
+  const tempoMap = buildTempoMap(notes, estimatedBpm, ppq, beatsPerMeasure, referenceBpm);
+  console.log(
+    `midiToQuantized: tempoMap has ${tempoMap.length} window(s), ` +
+    `BPM range [${Math.min(...tempoMap.map(e => e.bpm)).toFixed(1)}, ` +
+    `${Math.max(...tempoMap.map(e => e.bpm)).toFixed(1)}]`
+  );
+
+  // Step C: Apply tempo map — rescale ticks to approximate the beat grid.
+  const remappedNotes = applyTempoMap(notes, tempoMap, referenceBpm);
+
+  // Step D: Snap residual offsets to the quantization grid.
+  const quantizedNotes = quantizeMidiNotes(remappedNotes, ppq, gridDivisor);
 
   return {
     notes: quantizedNotes,
@@ -125,6 +161,7 @@ export function midiToQuantized(
     gridDivisor,
     gridTicks,
     gridAlignmentRatio,
-    estimatedBpm
+    estimatedBpm,
+    tempoMap
   };
 }

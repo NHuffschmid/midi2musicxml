@@ -1,6 +1,17 @@
 import { MidiNote } from '../types';
 
 /**
+ * A single entry in a tempo map: the local BPM that applies from `startTick`
+ * onwards (until the next entry or the end of the piece).
+ */
+export interface TempoMapEntry {
+  /** Start tick in the *original* (pre-rescaling) tick space. */
+  startTick: number;
+  /** Local BPM for this segment. */
+  bpm: number;
+}
+
+/**
  * QuantizedModel — optional pipeline stage between raw MIDI data (Stage 1)
  * and the TemporalModel (Stage 2).
  *
@@ -51,4 +62,14 @@ export interface QuantizedScore {
    * this field is `undefined`.
    */
   estimatedBpm?: number;
+
+  /**
+   * Window-based local tempo map built from the estimated global BPM.
+   * Each entry covers one analysis window (default 4 measures) and holds
+   * the local BPM that minimises mean-square quantization error for notes
+   * in that window.  Adjacent windows are linearly interpolated when the
+   * map is applied via applyTempoMap().
+   * Only present for live-recorded input (`wasQuantized === true`).
+   */
+  tempoMap?: TempoMapEntry[];
 }
