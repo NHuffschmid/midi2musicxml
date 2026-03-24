@@ -73,7 +73,8 @@ export function midi2MusicXML(
   const temporalScore = midiToTemporal(quantizedScore.notes, midi, {
     title: scoreTitle,
     composer: scoreComposer,
-    copyright
+    copyright,
+    estimatedTempo: quantizedScore.estimatedBpm
   });
   const temporalDump = dumpTemporalModel(temporalScore);
   const temporalPrettyPrint = prettyPrintTemporalModel(temporalScore);

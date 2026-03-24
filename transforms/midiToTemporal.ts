@@ -26,6 +26,11 @@ export interface MidiToTemporalOptions {
   composer?: string;
   copyright?: string;
   sectionBreakThreshold?: number; // Override default pause threshold
+  /**
+   * Estimated global tempo in BPM, e.g. from IOI analysis in Stage 1.5.
+   * When provided, this value overrides the tempo read from the MIDI header.
+   */
+  estimatedTempo?: number;
 }
 
 /**
@@ -53,7 +58,7 @@ export function midiToTemporal(
   
   // Step 3: Create sections with metadata
   const sections = measureGroups.map((measureGroup, index) => 
-    createSection(measureGroup, index + 1, midi)
+    createSection(measureGroup, index + 1, midi, options.estimatedTempo)
   );
   
   return {
@@ -193,7 +198,8 @@ function splitMeasuresByPauses(
 function createSection(
   measures: TemporalMeasure[],
   sectionNumber: number,
-  midi: Midi
+  midi: Midi,
+  estimatedTempo?: number
 ): TemporalSection {
   
   // Mark first measure in section
@@ -213,9 +219,10 @@ function createSection(
   const midiMeasuresForAnalysis = measures.map(m => ({ notes: m.notes }));
   const keySignature = analyseKey(midiMeasuresForAnalysis);
   
-  // Get time signature and tempo from MIDI header
+  // Get time signature and tempo from MIDI header;
+  // prefer estimatedTempo (from IOI analysis) when provided.
   const timeSignature = analyzeBeats(midi);
-  const tempo = analyzeTempo(midi);
+  const tempo = estimatedTempo ?? analyzeTempo(midi);
   
   return {
     sectionNumber,
