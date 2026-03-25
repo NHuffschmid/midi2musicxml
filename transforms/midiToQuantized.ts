@@ -52,7 +52,7 @@ const DEFAULT_GRID_DIVISOR = 24;
  * Minimum fraction of notes that must already sit on the grid for the input
  * to be classified as "score-derived / already quantized".
  */
-const DEFAULT_DETECTION_THRESHOLD = 0.50;
+const DEFAULT_DETECTION_THRESHOLD = 0.02;
 
 export interface MidiToQuantizedOptions {
   /**
