@@ -19,7 +19,7 @@ import { analyzeTempo } from '../analysis/analyzeTempo';
 const SECTION_BREAK_THRESHOLD = 2.0; // Pause duration in seconds to trigger section break
 
 /** Maximum overshoot (in ticks) past a measure boundary that is silently clipped. */
-const MEASURE_BOUNDARY_CLIP_THRESHOLD = 10;
+const MEASURE_BOUNDARY_CLIP_THRESHOLD = 80;
 
 export interface MidiToTemporalOptions {
   title?: string;
