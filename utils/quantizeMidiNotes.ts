@@ -18,9 +18,9 @@ export function quantizeMidiNotes(notes: MidiNote[], ppq: number, gridDivisor = 
   return notes.map(note => {
     // Quantize start tick
     const quantTick = Math.round(note.ticks / grid) * grid;
-    // Quantize duration (at least 1 tick to avoid zero duration)
-    const quantDur = Math.max(1, Math.round(note.durationTicks / grid) * grid);
-    console.log(`quantizeMidiNotes: midi=${note.midi} oldTicks=${note.ticks} newTicks=${quantTick} oldDur=${note.durationTicks} newDur=${quantDur}`);
+    // Quantize duration; enforce a minimum of one grid unit
+    const quantDur = Math.max(grid, Math.round(note.durationTicks / grid) * grid);
+    //console.log(`quantizeMidiNotes: midi=${note.midi} oldTicks=${note.ticks} newTicks=${quantTick} oldDur=${note.durationTicks} newDur=${quantDur}`);
     return {
       ...note,
       ticks: quantTick,

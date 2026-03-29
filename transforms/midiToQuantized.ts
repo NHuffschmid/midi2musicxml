@@ -45,8 +45,13 @@ import { estimateGlobalTempo } from '../utils/estimateGlobalTempo';
 import { buildTempoMap } from '../utils/buildTempoMap';
 import { applyTempoMap } from '../utils/applyTempoMap';
 
-/** Default quantization grid: ppq / 24 covers all values down to 32nds + triplets. */
-const DEFAULT_GRID_DIVISOR = 24;
+/**
+ * Default quantization grid for live recordings: ppq / 4 = 16th-note grid.
+ * This snaps note positions to 16th-note boundaries and ensures no note or
+ * rest shorter than a 16th note is produced, keeping the score readable.
+ * Override via MidiToQuantizedOptions.gridDivisor if finer resolution is needed.
+ */
+const DEFAULT_GRID_DIVISOR = 4;
 
 /**
  * Minimum fraction of notes that must already sit on the grid for the input
