@@ -8,33 +8,29 @@ import { midi2MusicXML } from '../../index';
 /**
  * End-to-end integration tests for the midi2MusicXML pipeline.
  *
- * These tests load real MIDI files from the repository's midi_archive/ and
- * run the complete 7-stage conversion pipeline.  They verify:
- *
- *  1. The output is a non-empty, well-formed XML string.
- *  2. The noteCursorTimes array is sorted and non-empty.
- *  3. The output is structurally stable (snapshot test).
+ * A single self-contained MIDI fixture (fixtures/elise.mid) is bundled with
+ * the module so that these tests have no dependency on paths outside the
+ * midi2musicxml submodule.
  *
  * Run with:
  *   npm run test          (all tests)
  *   npm run test:midi     (only this module)
  */
 
-// ─── MIDI archive path ────────────────────────────────────────────────────────
+// ─── Fixture path ─────────────────────────────────────────────────────────────
 
-// __dirname is the integration/ directory.
-// Counting up 7 levels reaches the depinus workspace root:
-//   integration/ → __tests__/ → midi2musicxml/ → modules/ → src/ → client/ → www/ → depinus/
+// __dirname resolves to the integration/ directory.
+// fixtures/ sits one level up inside __tests__/.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
-const MIDI_ARCHIVE = join(__dirname, '../../../../../../..', 'midi_archive');
+const FIXTURES   = join(__dirname, '..', 'fixtures');
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
-function loadMidi(relativePath: string): Midi {
-  const nodeBuffer = readFileSync(join(MIDI_ARCHIVE, relativePath));
+function loadMidi(filename: string): Midi {
+  const nodeBuffer = readFileSync(join(FIXTURES, filename));
   // Node.js Buffer.buffer is a shared pool – copy into a fresh, own ArrayBuffer
-  // to avoid @tonejs/midi receiving stale or offset data.
+  // so @tonejs/midi receives a correctly-sized buffer without any offset artefacts.
   const ab = new ArrayBuffer(nodeBuffer.byteLength);
   new Uint8Array(ab).set(nodeBuffer);
   return new Midi(ab);
@@ -58,14 +54,14 @@ function assertSortedAscending(arr: number[]) {
   }
 }
 
-// ─── Bach – Prelude (score-derived) ──────────────────────────────────────────
+// ─── Beethoven – Für Elise (score-derived) ───────────────────────────────────
 
-describe('midi2MusicXML – Bach Prelude (score-derived MIDI)', () => {
+describe('midi2MusicXML – Für Elise (score-derived MIDI)', () => {
   let musicxml: string;
   let noteCursorTimes: number[];
 
   beforeAll(() => {
-    const midi = loadMidi('BerndKrueger/Bach/bach_846.mid');
+    const midi = loadMidi('elise.mid');
     const result = midi2MusicXML(midi, { clef: 'piano' });
     musicxml = result.musicxml;
     noteCursorTimes = result.noteCursorTimes;
@@ -76,9 +72,6 @@ describe('midi2MusicXML – Bach Prelude (score-derived MIDI)', () => {
   });
 
   it('does not apply quantization (score-derived file)', () => {
-    // A score-derived file should never insert "live-recording" artefacts.
-    // Indirectly checked: if quantization were incorrectly invoked the XML
-    // structure would differ significantly from the snapshot below.
     expect(musicxml).toContain('<score-partwise');
   });
 
@@ -87,7 +80,7 @@ describe('midi2MusicXML – Bach Prelude (score-derived MIDI)', () => {
     assertSortedAscending(noteCursorTimes);
   });
 
-  it('noteCursorTimes contains only finite positive numbers', () => {
+  it('noteCursorTimes contains only finite non-negative numbers', () => {
     noteCursorTimes.forEach(t => {
       expect(Number.isFinite(t)).toBe(true);
       expect(t).toBeGreaterThanOrEqual(0);
@@ -95,20 +88,9 @@ describe('midi2MusicXML – Bach Prelude (score-derived MIDI)', () => {
   });
 
   it('matches structural snapshot', () => {
-    // The snapshot stores the first 2000 characters so that test output stays
-    // readable while still catching regressions in header, first measure, and
-    // first few notes.
+    // Snapshot of the first 2000 characters to catch regressions in the
+    // XML header, first measure, and initial notes without giant diffs.
     expect(musicxml.slice(0, 2000)).toMatchSnapshot();
-  });
-});
-
-// ─── Chopin – with title metadata ────────────────────────────────────────────
-
-describe('midi2MusicXML – Chopin Prelude (score-derived MIDI)', () => {
-  it('produces valid MusicXML', () => {
-    const midi = loadMidi('BerndKrueger/Chopin/chpn-p10.mid');
-    const { musicxml } = midi2MusicXML(midi, { clef: 'piano' });
-    assertValidXml(musicxml);
   });
 });
 
@@ -116,7 +98,6 @@ describe('midi2MusicXML – Chopin Prelude (score-derived MIDI)', () => {
 
 describe('midi2MusicXML – empty / no-note input', () => {
   it('returns empty strings and arrays for a MIDI with no notes', () => {
-    // Construct a Midi object with no tracks.
     const midi = new Midi();
     const { musicxml, noteCursorTimes } = midi2MusicXML(midi);
     expect(musicxml).toBe('');
@@ -128,7 +109,7 @@ describe('midi2MusicXML – empty / no-note input', () => {
 
 describe('midi2MusicXML – custom metadata options', () => {
   it('uses the provided title and composer in the output', () => {
-    const midi = loadMidi('BerndKrueger/Bach/bach_846.mid');
+    const midi = loadMidi('elise.mid');
     const { musicxml } = midi2MusicXML(midi, {
       title: 'Custom Title',
       composer: 'Custom Composer',

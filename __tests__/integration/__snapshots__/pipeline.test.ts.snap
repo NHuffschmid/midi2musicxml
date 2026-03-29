@@ -1,14 +1,14 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`midi2MusicXML – Bach Prelude (score-derived MIDI) > matches structural snapshot 1`] = `
+exports[`midi2MusicXML – Für Elise (score-derived MIDI) > matches structural snapshot 1`] = `
 "<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <score-partwise version="3.1">
   <work>
-    <work-title>Das wohltemperierte Klavier I - Praeludium und Fuge 1 in C-Dur BWV 846</work-title>
+    <work-title>Für Elise</work-title>
   </work>
   <identification>
     <creator type="software">Midi2MusicXML v0.8.0</creator>
-    <creator type="composer">Johann Sebastian Bach</creator>
+    <creator type="composer">Ludwig van Beethoven</creator>
   </identification>
   <part-list>
     <score-part id="P1">
@@ -21,11 +21,11 @@ exports[`midi2MusicXML – Bach Prelude (score-derived MIDI) > matches structura
         <divisions>480</divisions>
         <key>
           <fifths>0</fifths>
-          <mode>major</mode>
+          <mode>minor</mode>
         </key>
         <time>
-          <beats>4</beats>
-          <beat-type>4</beat-type>
+          <beats>3</beats>
+          <beat-type>8</beat-type>
         </time>
         <staves>2</staves>
         <clef number="1">
@@ -39,46 +39,47 @@ exports[`midi2MusicXML – Bach Prelude (score-derived MIDI) > matches structura
       </attributes>
       <direction placement="above">
         <direction-type>
-          <words font-size="10pt">♩ = 74</words>
+          <words font-size="10pt">♩ = 69</words>
         </direction-type>
-        <sound tempo="74"/>
+        <sound tempo="69"/>
       </direction>
       <note>
         <pitch>
-          <step>C</step>
-          <octave>4</octave>
+          <step>E</step>
+          <octave>5</octave>
         </pitch>
-        <duration>960</duration>
+        <duration>120</duration>
         <voice>1</voice>
-        <type>half</type>
-        <staff>2</staff>
+        <type>16th</type>
+        <beam number="1">begin</beam>
+        <staff>1</staff>
       </note>
-      <backup>
-        <duration>840</duration>
-      </backup>
+      <note>
+        <pitch>
+          <step>D</step>
+          <alter>1</alter>
+          <octave>5</octave>
+        </pitch>
+        <duration>120</duration>
+        <voice>1</voice>
+        <type>16th</type>
+        <beam number="1">end</beam>
+        <staff>1</staff>
+      </note>
+    </measure>
+    <measure number="2">
       <note>
         <pitch>
           <step>E</step>
-          <octave>4</octave>
+          <octave>5</octave>
         </pitch>
-        <duration>960</duration>
-        <voice>2</voice>
-        <type>half</type>
-        <staff>2</staff>
-      </note>
-      <backup>
         <duration>120</duration>
-      </backup>
+        <voice>1</voice>
+        <type>16th</type>
+        <beam number="1">begin</beam>
+        <staff>1</staff>
+      </note>
       <note>
         <pitch>
-          <step>C</step>
-          <octave>4</octave>
-        </pitch>
-        <duration>960</duration>
-        <voice>3</voice>
-        <type>half</type>
-        <staff>2</staff>
-      </note>
-      <backup>
-        <"
+      "
 `;

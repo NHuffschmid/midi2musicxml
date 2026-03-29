@@ -1,0 +1,14 @@
+elise.mid – License Notice
+==========================
+
+This MIDI file was created by Bernd Krueger and is used here solely as a
+test fixture for the midi2musicxml conversion pipeline.
+
+  Author : Bernd Krueger
+  Source : http://www.piano-midi.de
+  License: Creative Commons Attribution-ShareAlike (CC BY-SA) – Germany
+
+The file is licensed under the Creative Commons cc-by-sa Germany License.
+You may use and adapt it as long as you attribute the copyright holder
+(Bernd Krueger, http://www.piano-midi.de).  Any redistribution or public
+playback must be made available under the same license conditions.
