@@ -24,10 +24,10 @@ export function useMidi2MusicXMLWorker() {
 
       // Listen for response
       worker.onmessage = (event: MessageEvent) => {
-        const { success, musicxml, noteCursorTicks, error } = event.data;
+        const { success, musicxml, noteCursorTimes, error } = event.data;
 
         if (success) {
-          resolve({ musicxml, noteCursorTicks });
+          resolve({ musicxml, noteCursorTimes });
         } else {
           reject(new Error(error));
         }

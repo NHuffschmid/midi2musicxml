@@ -19,13 +19,24 @@ import { analyzeTempo } from '../analysis/analyzeTempo';
 const SECTION_BREAK_THRESHOLD = 2.0; // Pause duration in seconds to trigger section break
 
 /** Maximum overshoot (in ticks) past a measure boundary that is silently clipped. */
-const MEASURE_BOUNDARY_CLIP_THRESHOLD = 10;
+const MEASURE_BOUNDARY_CLIP_THRESHOLD = 80;
 
 export interface MidiToTemporalOptions {
   title?: string;
   composer?: string;
   copyright?: string;
   sectionBreakThreshold?: number; // Override default pause threshold
+  /**
+   * Estimated global tempo in BPM, e.g. from IOI analysis in Stage 1.5.
+   * When provided, this value overrides the tempo read from the MIDI header.
+   */
+  estimatedTempo?: number;
+  /**
+   * When true, notes that overshoot a measure boundary are always clipped to
+   * the measure end instead of being split into tied notes.
+   * Recommended for live-recorded input where timing is approximate.
+   */
+  clipAtMeasureBoundary?: boolean;
 }
 
 /**
@@ -46,14 +57,14 @@ export function midiToTemporal(
   const pauseThreshold = options.sectionBreakThreshold ?? SECTION_BREAK_THRESHOLD;
   
   // Step 1: Group notes into measures
-  const measures = groupNotesIntoMeasures(midiNotes, midi);
+  const measures = groupNotesIntoMeasures(midiNotes, midi, options.clipAtMeasureBoundary ?? false);
   
   // Step 2: Split measures into sections based on pauses
   const measureGroups = splitMeasuresByPauses(measures, pauseThreshold);
   
   // Step 3: Create sections with metadata
   const sections = measureGroups.map((measureGroup, index) => 
-    createSection(measureGroup, index + 1, midi)
+    createSection(measureGroup, index + 1, midi, options.estimatedTempo)
   );
   
   return {
@@ -68,7 +79,7 @@ export function midiToTemporal(
 /**
  * Group MIDI notes into measures based on time signature
  */
-function groupNotesIntoMeasures(midiNotes: MidiNote[], midi: Midi): TemporalMeasure[] {
+function groupNotesIntoMeasures(midiNotes: MidiNote[], midi: Midi, clipAtMeasureBoundary = false): TemporalMeasure[] {
   if (midiNotes.length === 0) {
     return [];
   }
@@ -109,11 +120,13 @@ function groupNotesIntoMeasures(midiNotes: MidiNote[], midi: Midi): TemporalMeas
     const startTick = measureNumber * ticksPerMeasure;
     const endTick = startTick + ticksPerMeasure;
 
-    // Clip notes that overshoot the measure boundary by less than the threshold
+    // Clip notes that overshoot the measure boundary.
+    // In clip-all mode (live recordings) any overshoot is trimmed to prevent
+    // unnecessary ties. Otherwise only tiny overshoots (< threshold) are clipped.
     const clippedNotes = notesInMeasure.map(note => {
       const noteEnd = note.ticks + note.durationTicks;
       const overshoot = noteEnd - endTick;
-      if (overshoot > 0 && overshoot < MEASURE_BOUNDARY_CLIP_THRESHOLD) {
+      if (overshoot > 0 && (clipAtMeasureBoundary || overshoot < MEASURE_BOUNDARY_CLIP_THRESHOLD)) {
         return { ...note, durationTicks: endTick - note.ticks };
       }
       return note;
@@ -193,7 +206,8 @@ function splitMeasuresByPauses(
 function createSection(
   measures: TemporalMeasure[],
   sectionNumber: number,
-  midi: Midi
+  midi: Midi,
+  estimatedTempo?: number
 ): TemporalSection {
   
   // Mark first measure in section
@@ -213,9 +227,10 @@ function createSection(
   const midiMeasuresForAnalysis = measures.map(m => ({ notes: m.notes }));
   const keySignature = analyseKey(midiMeasuresForAnalysis);
   
-  // Get time signature and tempo from MIDI header
+  // Get time signature and tempo from MIDI header;
+  // prefer estimatedTempo (from IOI analysis) when provided.
   const timeSignature = analyzeBeats(midi);
-  const tempo = analyzeTempo(midi);
+  const tempo = estimatedTempo ?? analyzeTempo(midi);
   
   return {
     sectionNumber,
