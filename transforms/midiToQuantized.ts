@@ -8,7 +8,7 @@
  * -------------------
  * A MIDI file is considered *already quantized* when the fraction of notes
  * whose ticks and durationTicks are exact multiples of the quantization grid
- * meets or exceeds `detectionThreshold` (default 50 %).
+ * meets or exceeds `detectionThreshold`.
  *
  * For a grid of ppq/24:
  *   - All standard note values down to 32nd notes are exact multiples.
@@ -62,7 +62,6 @@ const DEFAULT_DETECTION_THRESHOLD = 0.02;
 export interface MidiToQuantizedOptions {
   /**
    * Divisor applied to PPQ to obtain the grid size in ticks.
-   * Default: 24  (grid = ppq / 24).
    */
   gridDivisor?: number;
 

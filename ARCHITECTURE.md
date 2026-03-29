@@ -36,9 +36,8 @@ This stage is **only active for live-recorded MIDI** — score-derived files pas
 
 #### Detection
 
-A MIDI file is classified as *score-derived* when the fraction of notes whose `ticks`
-and `durationTicks` are exact multiples of the quantization grid (`ppq / 24`) meets or
-exceeds the detection threshold (default **50 %**).
+A MIDI file is classified as *score-derived* when the fraction of notes whose `ticks` and `durationTicks` are exact multiples of the quantization grid meets or
+exceeds the detection threshold.
 
 #### Sub-steps for live-recorded input
 
@@ -75,9 +74,8 @@ only for pause-based section detection in Stage 2.
 **Step D — Grid quantization**
 
 Onset ticks and duration ticks are snapped to the nearest multiple of the grid
-(`ppq / gridDivisor`, default divisor **24**). This removes any residual offset
-left after Step C and covers all standard note values down to 32nd notes and
-triplet subdivisions (eighth-triplet = `ppq × 2/3`, etc.).
+(`ppq / gridDivisor`). This removes any residual offset
+left after Step C.
 
 - **Model**: `models/QuantizedModel.ts`
 - **Transform**: `transforms/midiToQuantized.ts`
