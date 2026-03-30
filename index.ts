@@ -19,19 +19,26 @@ import {
 import xmlFormatter from 'xml-formatter';
 import { MidiNote } from './types';
 
-// Re-export types for backwards compatibility
-export type { ClefType } from './types';
-
-export interface Midi2MusicXMLOptions {
-  title?: string;
-  composer?: string;
-  clef?: 'piano' | 'violin' | 'viola' | 'cello';
-}
-
+/**
+ * The result of converting a MIDI file to MusicXML.
+ */
 export interface Midi2MusicResult {
+  /** The serialized MusicXML string, formatted and ready to render. */
   musicxml: string;
   /** Sorted onset times in seconds for the note-by-note cursor animation. */
   noteCursorTimes: number[];
+}
+
+/**
+ * Options for the {@link midi2MusicXML} conversion.
+ */
+export interface Midi2MusicXMLOptions {
+  /** Score title. Defaults to the title stored in the MIDI file's metadata. */
+  title?: string;
+  /** Composer name. Defaults to the composer stored in the MIDI file's metadata. */
+  composer?: string;
+  /** Instrument / clef layout to use for staff assignment. Defaults to `'piano'` (grand staff). */
+  clef?: 'piano' | 'violin' | 'viola' | 'cello';
 }
 
 /**
@@ -47,6 +54,9 @@ export interface Midi2MusicResult {
  * Stage 4:   LayoutModel - Layout decisions (staff assignment)
  * Stage 5:   MusicXMLModel - MusicXML DOM structure
  * Stage 6:   XML String - Serialized output
+ *
+ * @returns The MusicXML string and sorted cursor onset times.
+ *   Returns `{ musicxml: '', noteCursorTimes: [] }` if the MIDI contains no notes.
  */
 export function midi2MusicXML(
   midi: Midi,

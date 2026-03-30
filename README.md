@@ -50,6 +50,27 @@ document.querySelector('input[type=file]').addEventListener('change', (e) => {
 });
 ```
 
+## API
+
+### `midi2MusicXML(midi, options?): Midi2MusicResult`
+
+Converts a [`@tonejs/midi`](https://www.npmjs.com/package/@tonejs/midi) `Midi` object to MusicXML.
+
+#### `Midi2MusicXMLOptions`
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `title` | `string` | MIDI metadata | Score title. |
+| `composer` | `string` | MIDI metadata | Composer name. |
+| `clef` | `'piano' \| 'violin' \| 'viola' \| 'cello'` | `'piano'` | Instrument / clef layout for staff assignment. `'piano'` produces a grand staff. |
+
+#### `Midi2MusicResult`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `musicxml` | `string` | The serialized MusicXML string, formatted and ready to render. Empty string if the MIDI contains no notes. |
+| `noteCursorTimes` | `number[]` | Sorted note onset times in seconds for a note-by-note cursor animation. |
+
 ## Example
 
 See the [`example/`](example/README.md) directory for a runnable Vite + React app.
