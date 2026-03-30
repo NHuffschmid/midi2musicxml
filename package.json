@@ -1,0 +1,31 @@
+{
+  "name": "midi2musicxml",
+  "version": "0.8.0",
+  "description": "Convert MIDI files to MusicXML – a self-contained TypeScript pipeline",
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "test":          "vitest --run",
+    "test:watch":    "vitest",
+    "test:coverage": "vitest --coverage"
+  },
+  "dependencies": {
+    "@tonejs/midi": "^2.0.28",
+    "xml-formatter": "^3.6.7"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "jsdom": "^28.1.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.0"
+  },
+  "license": "MIT"
+}
