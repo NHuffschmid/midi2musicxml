@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 
-import type { Midi2MusicXMLOptions, Midi2MusicResult } from './index';
+import type { Midi2MusicXMLOptions, Midi2MusicResult } from '../index';
 import type { Midi } from '@tonejs/midi';
 
 export function useMidi2MusicXMLWorker() {

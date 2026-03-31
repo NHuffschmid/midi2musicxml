@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi';
-import { midi2MusicXML } from './index';
+import { midi2MusicXML } from '../index';
 
 // Worker message handler
 self.onmessage = async (event: MessageEvent) => {

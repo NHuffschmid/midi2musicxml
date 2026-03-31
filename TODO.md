@@ -12,12 +12,6 @@
   - `"exports"` Feld für modernen Resolution
 - [ ] `"scripts"` um `"build"` und `"prepublishOnly": "npm run build"` ergänzen
 
-### React-Code vom Kern trennen
-- [ ] `useMidi2MusicXMLWorker.ts` und `midi2MusicXML.worker.ts` aus dem Kernpaket entfernen
-- [ ] In ein separates Paket (z.B. `midi2musicxml-react`) oder Subpath-Export (`midi2musicxml/react`) auslagern
-- [ ] `react` Peer-Dependency aus dem Kernpaket entfernen
-- [ ] Kern-API (`midi2MusicXML()`) bleibt rein funktional und Framework-agnostisch
-
 ### Debug-Aufrufe aus Produktion entfernen
 - [ ] `index.ts`: `dumpXxxModel()` / `prettyPrintXxxModel()`-Aufrufe entfernen (werden bei jeder Konvertierung ausgeführt)
 - [ ] Debug-Funktionalität hinter ein optionales Flag oder eine separate `midi2MusicXMLDebug()`-Funktion verschieben

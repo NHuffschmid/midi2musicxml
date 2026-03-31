@@ -1,9 +1,13 @@
 {
   "name": "midi2musicxml",
   "version": "0.8.0",
-  "description": "Convert MIDI files to MusicXML – a self-contained TypeScript pipeline",
+  "description": "Convert MIDI files to MusicXML",
   "type": "module",
   "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./react": "./react/index.ts"
+  },
   "scripts": {
     "test":          "vitest --run",
     "test:watch":    "vitest",
