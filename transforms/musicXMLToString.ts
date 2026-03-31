@@ -46,7 +46,7 @@ function serializeScorePartwise(score: ScorePartwise): string {
 
   // Identification
   xml += `  <identification>\n`;
-  xml += `    <creator type="software">Midi2MusicXML v${MIDI2MUSICXML_VERSION}</creator>\n`;
+  xml += `    <creator type="engraver">Midi2MusicXML v${MIDI2MUSICXML_VERSION}</creator>\n`;
   if (score.identification) {
     if (score.identification.creator) {
       for (const creator of score.identification.creator) {

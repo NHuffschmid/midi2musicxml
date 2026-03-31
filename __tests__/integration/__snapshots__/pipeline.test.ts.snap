@@ -7,7 +7,7 @@ exports[`midi2MusicXML – Für Elise (score-derived MIDI) > matches structural 
     <work-title>Für Elise</work-title>
   </work>
   <identification>
-    <creator type="software">Midi2MusicXML v0.8.0</creator>
+    <creator type="engraver">Midi2MusicXML v0.8.0</creator>
     <creator type="composer">Ludwig van Beethoven</creator>
   </identification>
   <part-list>
