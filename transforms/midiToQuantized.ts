@@ -118,11 +118,11 @@ export function midiToQuantized(
   const gridAlignmentRatio = computeGridAlignmentRatio(notes, gridTicks);
   const alreadyQuantized = gridAlignmentRatio >= detectionThreshold;
 
-  console.log(
-    `midiToQuantized: alignment=${(gridAlignmentRatio * 100).toFixed(1)}% ` +
-    `(threshold=${(detectionThreshold * 100).toFixed(0)}%) → ` +
-    (alreadyQuantized ? 'score-derived, no quantization needed' : 'live-recording detected, quantization required')
-  );
+  //console.log(
+  //  `midiToQuantized: alignment=${(gridAlignmentRatio * 100).toFixed(1)}% ` +
+  //  `(threshold=${(detectionThreshold * 100).toFixed(0)}%) → ` +
+  //  (alreadyQuantized ? 'score-derived, no quantization needed' : 'live-recording detected, quantization required')
+  //);
 
   if (alreadyQuantized) {
     // Score-derived file: timestamps are authoritative, nothing to do.

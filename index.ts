@@ -20,6 +20,18 @@ import xmlFormatter from 'xml-formatter';
 import { MidiNote } from './types';
 
 /**
+ * Debug output produced by each pipeline stage (dump + pretty-print).
+ * Only populated when `Midi2MusicXMLOptions.debug` is `true`.
+ */
+export interface Midi2MusicDebugInfo {
+  quantized: { dump: ReturnType<typeof dumpQuantizedModel>; prettyPrint: string };
+  temporal:  { dump: ReturnType<typeof dumpTemporalModel>;  prettyPrint: string };
+  notation:  { dump: ReturnType<typeof dumpNotationModel>;  prettyPrint: string };
+  layout:    { dump: ReturnType<typeof dumpLayoutModel>;    prettyPrint: string };
+  musicXML:  { dump: ReturnType<typeof dumpMusicXMLModel>;  prettyPrint: string };
+}
+
+/**
  * The result of converting a MIDI file to MusicXML.
  */
 export interface Midi2MusicResult {
@@ -27,6 +39,8 @@ export interface Midi2MusicResult {
   musicxml: string;
   /** Sorted onset times in seconds for the note-by-note cursor animation. */
   noteCursorTimes: number[];
+  /** Per-stage debug dumps. Only present when `options.debug` was `true`. */
+  debug?: Midi2MusicDebugInfo;
 }
 
 /**
@@ -39,6 +53,12 @@ export interface Midi2MusicXMLOptions {
   composer?: string;
   /** Instrument / clef layout to use for staff assignment. Defaults to `'piano'` (grand staff). */
   clef?: 'piano' | 'violin' | 'viola' | 'cello';
+  /**
+   * When `true`, each pipeline stage produces a dump and a pretty-print string
+   * which are returned in `result.debug`. Has no effect in production — omit or
+   * set to `false` to avoid any debug overhead.
+   */
+  debug?: boolean;
 }
 
 /**
@@ -77,8 +97,6 @@ export function midi2MusicXML(
   // Detects whether the input is score-derived (already on the tick grid) or
   // live-recorded (needs quantization).  Only live-recorded data is modified.
   const quantizedScore = midiToQuantized(midiNotes, pulsesPerQuarterNote);
-  const quantizedDump = dumpQuantizedModel(quantizedScore);
-  const quantizedPrettyPrint = prettyPrintQuantizedModel(quantizedScore);
 
   // Stage 2: QuantizedScore → TemporalModel
   const temporalScore = midiToTemporal(quantizedScore.notes, midi, {
@@ -88,30 +106,22 @@ export function midi2MusicXML(
     estimatedTempo: quantizedScore.estimatedBpm,
     clipAtMeasureBoundary: quantizedScore.wasQuantized
   });
-  const temporalDump = dumpTemporalModel(temporalScore);
-  const temporalPrettyPrint = prettyPrintTemporalModel(temporalScore);
 
   // Stage 3: TemporalModel → NotationModel
   const notationScore = temporalToNotation(temporalScore, {
     pulsesPerQuarterNote
   });
-  const notationDump = dumpNotationModel(notationScore);
-  const notationPrettyPrint = prettyPrintNotationModel(notationScore);
 
   // Stage 4: NotationModel → LayoutModel
   const instrument: InstrumentType = options.clef ?? 'piano';
   const layoutScore = notationToLayout(notationScore, {
     instrument
   });
-  const layoutDump = dumpLayoutModel(layoutScore);
-  const layoutPrettyPrint = prettyPrintLayoutModel(layoutScore);
 
   // Stage 5: LayoutModel → MusicXMLModel
   const musicXMLDoc = layoutToMusicXML(layoutScore, {
     divisions: pulsesPerQuarterNote
   });
-  const musicXMLDump = dumpMusicXMLModel(musicXMLDoc);
-  const musicXMLPrettyPrint = prettyPrintMusicXMLModel(musicXMLDoc);
 
   // Stage 6: MusicXMLModel → XML String
   let musicXml = musicXMLToString(musicXMLDoc);
@@ -162,5 +172,14 @@ export function midi2MusicXML(
     .map(tick => tickToTimeMap.get(tick) ?? midi.header.ticksToSeconds(tick))
     .sort((a, b) => a - b);
 
-  return { musicxml: musicXml, noteCursorTimes };
+  // Collect per-stage debug info only when explicitly requested.
+  const debugInfo: Midi2MusicDebugInfo | undefined = options.debug ? {
+    quantized: { dump: dumpQuantizedModel(quantizedScore),   prettyPrint: prettyPrintQuantizedModel(quantizedScore) },
+    temporal:  { dump: dumpTemporalModel(temporalScore),     prettyPrint: prettyPrintTemporalModel(temporalScore) },
+    notation:  { dump: dumpNotationModel(notationScore),     prettyPrint: prettyPrintNotationModel(notationScore) },
+    layout:    { dump: dumpLayoutModel(layoutScore),         prettyPrint: prettyPrintLayoutModel(layoutScore) },
+    musicXML:  { dump: dumpMusicXMLModel(musicXMLDoc),       prettyPrint: prettyPrintMusicXMLModel(musicXMLDoc) },
+  } : undefined;
+
+  return { musicxml: musicXml, noteCursorTimes, debug: debugInfo };
 }

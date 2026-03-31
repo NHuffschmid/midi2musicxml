@@ -12,10 +12,6 @@
   - `"exports"` Feld für modernen Resolution
 - [ ] `"scripts"` um `"build"` und `"prepublishOnly": "npm run build"` ergänzen
 
-### Debug-Aufrufe aus Produktion entfernen
-- [ ] `index.ts`: `dumpXxxModel()` / `prettyPrintXxxModel()`-Aufrufe entfernen (werden bei jeder Konvertierung ausgeführt)
-- [ ] Debug-Funktionalität hinter ein optionales Flag oder eine separate `midi2MusicXMLDebug()`-Funktion verschieben
-
 ## P1 — Wichtig
 
 ### `package.json` Metadaten ergänzen
