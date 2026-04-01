@@ -55,8 +55,8 @@ export interface Midi2MusicXMLOptions {
   clef?: 'piano' | 'violin' | 'viola' | 'cello';
   /**
    * When `true`, each pipeline stage produces a dump and a pretty-print string
-   * which are returned in `result.debug`. Has no effect in production — omit or
-   * set to `false` to avoid any debug overhead.
+   * which are returned in `result.debug`. This adds overhead and should
+   * generally be omitted or set to `false` in production.
    */
   debug?: boolean;
 }
