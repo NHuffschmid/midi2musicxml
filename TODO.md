@@ -1,17 +1,5 @@
 # TODO — Publish as Standalone GitHub Project
 
-## P0 — Critical
-
-### Build-Pipeline + korrekte Exports
-- [ ] Build-Script einrichten (z.B. `tsup`, `tsc`, `rollup`)
-- [ ] `tsconfig.json`: `noEmit` entfernen, `declaration: true`, `outDir: "./dist"` setzen
-- [ ] `package.json` Entry Points anpassen:
-  - `"main": "./dist/index.cjs"` (CommonJS)
-  - `"module": "./dist/index.mjs"` (ESM)
-  - `"types": "./dist/index.d.ts"`
-  - `"exports"` Feld für modernen Resolution
-- [ ] `"scripts"` um `"build"` und `"prepublishOnly": "npm run build"` ergänzen
-
 ## P1 — Wichtig
 
 ### `package.json` Metadaten ergänzen
@@ -22,10 +10,6 @@
 - [ ] `"keywords"` — z.B. `["midi", "musicxml", "converter", "music", "notation", "sheet-music"]`
 - [ ] `"engines"` — z.B. `{ "node": ">=18" }`
 
-### `files` Feld oder `.npmignore` erstellen
-- [ ] `"files": ["dist", "LICENSE", "README.md"]` in `package.json` hinzufügen
-- [ ] Damit werden `__tests__/`, `debug/`, `example/`, `.github/`, `analysis/`, `ARCHITECTURE.md` nicht mit-publiziert
-
 ### Doppelte Versionspflege eliminieren
 - [ ] `VERSION.ts` entfernen oder im Build-Step automatisch aus `package.json` generieren
 - [ ] Single Source of Truth: Version nur in `package.json`
@@ -35,7 +19,7 @@
 ### README bereinigen
 - [ ] „Project Structure" korrigieren: `render/` existiert nicht, entfernen
 - [ ] „Known Bugs / Limitations": DEPINUS-Referenz entfernen/abschwächen für eigenständiges Projekt
-- [ ] Badges hinzufügen (CI-Status, npm-Version, Lizenz)
+- [ ] Badges hinzufügen (CI-Status, Lizenz)
 - [ ] `CONTRIBUTING.md` erstellen oder Link darauf in README
 
 ### CHANGELOG-Format standardisieren
