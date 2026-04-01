@@ -1,4 +1,8 @@
+
 # Midi2MusicXML
+
+![CI](https://github.com/NHuffschmid/midi2musicxml/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 A TypeScript/JavaScript module for converting MIDI files to MusicXML in the browser.
 
@@ -82,11 +86,11 @@ See the [`example/`](example/README.md) directory for a runnable Vite + React ap
 - THIS PROJECT IS IN AN EARLY EXPERIMENTAL STAGE 
 
 ## Project Structure
-- `analysis/` – Key, tempo, and section analysis utilities
+- `analysis/` – Analysis utilities for key, tempo, and sections
 - `models/` – Data models for each pipeline stage
-- `transforms/` – Stage-to-stage transformation logic
-- `utils/` – Helper functions
-- `render/` – MusicXML rendering helpers
+- `transforms/` – Transformations between pipeline stages
+- `utils/` – Helper functions (e.g. MIDI/note conversion)
+- `react/` – React-specific hooks and worker (optional)
 
 ## License
 MIT

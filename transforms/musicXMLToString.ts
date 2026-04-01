@@ -16,7 +16,9 @@ import {
   Key,
   Time
 } from '../models/MusicXMLModel';
-import { MIDI2MUSICXML_VERSION } from '../VERSION';
+// Version is injected at build time by Vite define
+declare const __MIDI2MUSICXML_VERSION__: string;
+const MIDI2MUSICXML_VERSION = __MIDI2MUSICXML_VERSION__;
 import { preprocessMeasure } from './measurePreprocessor';
 import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
 

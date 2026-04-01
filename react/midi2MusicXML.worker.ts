@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi';
-import { midi2MusicXML } from './index';
+import { midi2MusicXML } from '../index';
 
 // Worker message handler
 self.onmessage = async (event: MessageEvent) => {
@@ -10,10 +10,10 @@ self.onmessage = async (event: MessageEvent) => {
     const midi = new Midi(midiBytes);
 
     // Convert to MusicXML (synchronous in worker)
-    const { musicxml, noteCursorTimes } = midi2MusicXML(midi, options);
+    const { musicxml, noteCursorTimes, debug } = midi2MusicXML(midi, options);
 
     // Send result back
-    self.postMessage({ success: true, musicxml: musicxml, noteCursorTimes });
+    self.postMessage({ success: true, musicxml: musicxml, noteCursorTimes, debug });
   }
   catch (error) {
     console.error('[Worker Thread] Error:', error);
