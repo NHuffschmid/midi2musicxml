@@ -1,25 +1,10 @@
 # TODO — Publish as Standalone GitHub Project
 
-## P1 — Wichtig
-
-### Doppelte Versionspflege eliminieren
-- [ ] `VERSION.ts` entfernen oder im Build-Step automatisch aus `package.json` generieren
-- [ ] Single Source of Truth: Version nur in `package.json`
-
 ## P2 — Wünschenswert
-
-### README bereinigen
-- [ ] „Project Structure" korrigieren: `render/` existiert nicht, entfernen
-- [ ] „Known Bugs / Limitations": DEPINUS-Referenz entfernen/abschwächen für eigenständiges Projekt
-- [ ] Badges hinzufügen (CI-Status, Lizenz)
-- [ ] `CONTRIBUTING.md` erstellen oder Link darauf in README
 
 ### CHANGELOG-Format standardisieren
 - [ ] [Keep a Changelog](https://keepachangelog.com/)-Format übernehmen
 - [ ] Kategorien verwenden: `Added`, `Changed`, `Fixed`, `Removed`
-
-### Leeren `validators/` Ordner entfernen
-- [ ] `validators/index.ts` enthält nur auskommentierte Zeilen — entweder implementieren oder entfernen
 
 ### CI erweitern
 - [ ] `tsc --noEmit` (Type-Check) als separaten Step in `ci.yml` hinzufügen
