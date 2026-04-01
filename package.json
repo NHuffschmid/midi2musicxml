@@ -32,4 +32,25 @@
     "vitest": "^4.0.0"
   },
   "license": "MIT"
+  ,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NHuffschmid/midi2musicxml.git"
+  },
+  "homepage": "https://github.com/NHuffschmid/midi2musicxml#readme",
+  "bugs": {
+    "url": "https://github.com/NHuffschmid/midi2musicxml/issues"
+  },
+  "author": "Norbert Huffschmid <depinus@gmx.de>",
+  "keywords": [
+    "midi",
+    "musicxml",
+    "converter",
+    "music",
+    "notation",
+    "sheet-music"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
 }

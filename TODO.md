@@ -2,14 +2,6 @@
 
 ## P1 — Wichtig
 
-### `package.json` Metadaten ergänzen
-- [ ] `"repository"` — GitHub-URL
-- [ ] `"homepage"` — GitHub-URL oder Docs-Seite
-- [ ] `"bugs"` — GitHub Issues URL
-- [ ] `"author"` — `"Norbert Huffschmid <depinus@gmx.de>"`
-- [ ] `"keywords"` — z.B. `["midi", "musicxml", "converter", "music", "notation", "sheet-music"]`
-- [ ] `"engines"` — z.B. `{ "node": ">=18" }`
-
 ### Doppelte Versionspflege eliminieren
 - [ ] `VERSION.ts` entfernen oder im Build-Step automatisch aus `package.json` generieren
 - [ ] Single Source of Truth: Version nur in `package.json`
