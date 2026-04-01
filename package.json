@@ -11,7 +11,8 @@
   "scripts": {
     "test":          "vitest --run",
     "test:watch":    "vitest",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p example"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",
