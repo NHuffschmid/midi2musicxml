@@ -24,7 +24,7 @@ git clone https://github.com/NHuffschmid/midi2musicxml.git
 Then, copy the `midi2musicxml` directory into your own project, or use a relative import:
 
 ```ts
-import { midiToMusicXML } from './path/to/midi2musicxml';
+import { midi2MusicXML } from './path/to/midi2musicxml';
 ```
 
 Alternatively, you can add the module as a local npm package:
