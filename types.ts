@@ -1,49 +1,48 @@
-// MusicXML Model Types
+/**
+ * Legacy types for backward compatibility and MIDI processing
+ * 
+ * These types are used in the early stages of the pipeline
+ * before conversion to the new model architecture.
+ */
 
-export type Note = {
-    step: string;
-    alter?: number;
-    octave: number;
-    duration: number;
-    type: string;
-    isRest?: boolean;
-    tick?: number;
-};
+import type { NoteType } from './models/NotationModel';
 
-export type Measure = {
-    notes: Note[];
+// Instrument types (for backward compatibility)
+export const ClefTypes = ['piano', 'violin', 'viola', 'cello'] as const;
+export type ClefType = typeof ClefTypes[number];
+
+// MIDI data types (from tonejs/midi)
+export type MidiNote = {
+  midi: number;
+  name: string;
+  ticks: number;
+  time: number;
+  duration: number;
+  durationTicks: number;
+  velocity: number;
+  bars: number;
+  tempo?: number;
+  tuplet?: {
+    actualNotes: number;  // e.g. 3 for a triplet
+    normalNotes: number;  // e.g. 2 for a triplet
+    noteType: NoteType;   // base note type, e.g. 'eighth', 'quarter'
+    groupId: string;      // unique ID shared by all notes in the group
+    position: number;     // 1-based position within the group
+  };
+}
+
+export type MidiMeasure = {
+  notes: MidiNote[];
+}
+
+export type KeySignature = {
+  fifths: number;  // -7 to +7 (flat to sharp)
+  mode: 'major' | 'minor';
 };
 
 export type Section = {
-    measures: Measure[];
-    attributes?: {
-        divisions?: number;
-        key?: string;
-        time?: { beats: number; beatType: number };
-        clef?: { sign: string; line: number };
-    };
-    sound?: {
-        tempo: number;
-    };
-    direction?: {
-        tempo: number;
-        beatUnit?: string;
-    };
+  measures: MidiMeasure[];
+  key: KeySignature;
+  time: { beats: number; beatType: number };
+  tempo?: number;
 };
-
-export type Voice = {
-    clef: 'treble' | 'bass';
-    sections: Section[];
-};
-
-export type System = {
-    voices: Voice[];
-};
-
-export type Score = {
-    title?: string;
-    composer?: string;
-    copyright?: string;
-    system: System;
-};
-
