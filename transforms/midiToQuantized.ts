@@ -140,7 +140,7 @@ export function midiToQuantized(
 
   // Step A: Estimate global tempo via IOI histogram.
   const estimatedBpmIOI = estimateGlobalTempo(notes);
-  console.log(`midiToQuantized: estimated global tempo = ${estimatedBpmIOI} BPM`);
+  //console.log(`midiToQuantized: estimated global tempo = ${estimatedBpmIOI} BPM`);
 
   // Step B: Build window-based tempo map (±10 % around globalBpm).
   const referenceBpm = notes[0].tempo ?? 120;
@@ -149,11 +149,11 @@ export function midiToQuantized(
   const bpmValues = tempoMap.map(e => e.bpm);
   const meanTempoMapBpm = bpmValues.length > 0 ? bpmValues.reduce((a, b) => a + b, 0) / bpmValues.length : estimatedBpmIOI;
   const meanTempoMapBpmRounded = Math.round(meanTempoMapBpm);
-  console.log(
-    `midiToQuantized: tempoMap has ${tempoMap.length} window(s), ` +
-    `BPM range [${Math.min(...bpmValues).toFixed(1)}, ` +
-    `${Math.max(...bpmValues).toFixed(1)}], mean=${meanTempoMapBpm.toFixed(2)}, rounded=${meanTempoMapBpmRounded}`
-  );
+  //console.log(
+  //  `midiToQuantized: tempoMap has ${tempoMap.length} window(s), ` +
+  //  `BPM range [${Math.min(...bpmValues).toFixed(1)}, ` +
+  //  `${Math.max(...bpmValues).toFixed(1)}], mean=${meanTempoMapBpm.toFixed(2)}, rounded=${meanTempoMapBpmRounded}`
+  //);
 
   // Step C: Apply tempo map — rescale ticks to approximate the beat grid.
   const remappedNotes = applyTempoMap(notes, tempoMap, referenceBpm);
