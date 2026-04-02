@@ -14,7 +14,7 @@ describe('quantizeMidiNotes', () => {
 
   // ── Already-aligned notes ─────────────────────────────────────────────────
 
-  it('passes through notes already on a 16th-note grid (default divisor=24)', () => {
+  it('passes through notes already on the default 20-tick grid (divisor=24)', () => {
     // Grid = 480/24 = 20 ticks.  These notes sit exactly on 20-tick boundaries.
     const notes = [
       makeNote(60, 0, 480),    // C4 quarter – onset and duration are multiples of 20
