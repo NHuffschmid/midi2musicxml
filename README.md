@@ -4,7 +4,7 @@
 ![CI](https://github.com/NHuffschmid/midi2musicxml/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-A TypeScript/JavaScript module for converting MIDI files to MusicXML in the browser.
+A TypeScript/JavaScript module for converting MIDI files to MusicXML.
 
 ## Features
 - Modular 6-stage pipeline: MIDI → MusicXML
@@ -12,6 +12,10 @@ A TypeScript/JavaScript module for converting MIDI files to MusicXML in the brow
 - Chord, beam rest and staccato detection
 - Flexible staff assignment (piano, violin, viola, cello)
 - Works with [@tonejs/midi](https://www.npmjs.com/package/@tonejs/midi) and [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/)
+
+## Live Demo
+
+A live demo is available [here](https://nhuffschmid.github.io/midi2musicxml/).
 
 ## Installation
 
@@ -77,7 +81,7 @@ Converts a [`@tonejs/midi`](https://www.npmjs.com/package/@tonejs/midi) `Midi` o
 
 ## Example
 
-See the [`example/`](example/README.md) directory for a runnable Vite + React app.
+See the [`example/`](example/README.md) directory for a runnable Vite + React app. This is the source code of the [Live Demo](#live-demo).
 
 ## Known Bugs / Limitations
 - This project is part of the DEPINUS project: https://github.com/NHuffschmid/depinus
