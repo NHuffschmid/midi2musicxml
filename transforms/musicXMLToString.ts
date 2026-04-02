@@ -1,0 +1,446 @@
+/**
+ * Transform: MusicXMLModel → XML String
+ * 
+ * Serializes MusicXML DOM structure to XML string.
+ */
+
+import {
+  MusicXMLDocument,
+  ScorePartwise,
+  Part,
+  Measure,
+  Attributes,
+  NoteElement,
+  Direction,
+  Clef,
+  Key,
+  Time
+} from '../models/MusicXMLModel';
+// Version is injected at build time by Vite define
+declare const __MIDI2MUSICXML_VERSION__: string;
+const MIDI2MUSICXML_VERSION = __MIDI2MUSICXML_VERSION__;
+import { preprocessMeasure } from './measurePreprocessor';
+import { midiTicksToXmlDurationType } from '../utils/midiTicksToXmlDurationType';
+
+/**
+ * Main serialize function: MusicXMLModel → XML String
+ */
+export function musicXMLToString(doc: MusicXMLDocument): string {
+  let xml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n`;
+  xml += `<score-partwise version="${doc.version}">\n`;
+  xml += serializeScorePartwise(doc.scorePartwise);
+  xml += `</score-partwise>`;
+  return xml;
+}
+
+/**
+ * Serialize score-partwise element
+ */
+function serializeScorePartwise(score: ScorePartwise): string {
+  let xml = '';
+
+  // Work
+  if (score.work?.workTitle) {
+    xml += `  <work>\n`;
+    xml += `    <work-title>${escapeXml(score.work.workTitle)}</work-title>\n`;
+    xml += `  </work>\n`;
+  }
+
+  // Identification
+  xml += `  <identification>\n`;
+  xml += `    <creator type="engraver">Midi2MusicXML v${MIDI2MUSICXML_VERSION}</creator>\n`;
+  if (score.identification) {
+    if (score.identification.creator) {
+      for (const creator of score.identification.creator) {
+        xml += `    <creator type="${creator.type}">${escapeXml(creator.name)}</creator>\n`;
+      }
+    }
+    if (score.identification.rights) {
+      xml += `    <rights>${escapeXml(score.identification.rights)}</rights>\n`;
+    }
+  }
+  xml += `  </identification>\n`;
+
+  // Part list
+  xml += `  <part-list>\n`;
+  for (const scorePart of score.partList.scoreParts) {
+    xml += `    <score-part id="${scorePart.id}">\n`;
+    const preserveSpace = scorePart.partName.trim() === '' && scorePart.partName.length > 0;
+    xml += `      <part-name${preserveSpace ? ' xml:space="preserve"' : ''}>${escapeXml(scorePart.partName)}</part-name>\n`;
+    xml += `    </score-part>\n`;
+  }
+  xml += `  </part-list>\n`;
+
+  // Parts
+  for (const part of score.parts) {
+    xml += serializePart(part);
+  }
+
+  return xml;
+}
+
+/**
+ * Serialize part element
+ */
+function serializePart(part: Part): string {
+  let xml = `  <part id="${part.id}">\n`;
+  let currentDivisions = 480; // default fallback
+  let currentTempo = 120; // default fallback (BPM)
+
+  for (const measure of part.measures) {
+    if (measure.attributes?.divisions !== undefined) {
+      currentDivisions = measure.attributes.divisions;
+    }
+    if (measure.direction) {
+      for (const dir of measure.direction) {
+        if (dir.sound?.tempo !== undefined) {
+          currentTempo = dir.sound.tempo;
+        }
+      }
+    }
+    xml += serializeMeasure(measure, currentDivisions, currentTempo);
+  }
+
+  xml += `  </part>\n`;
+  return xml;
+}
+
+/**
+ * Serialize measure element
+ */
+function serializeMeasure(measure: Measure, divisions: number = 480, tempo: number = 120): string {
+  let xml = `    <measure number="${measure.number}">\n`;
+
+  // Print
+  if (measure.print) {
+    xml += serializePrint(measure.print);
+  }
+
+  // Barline (left side)
+  if (measure.barline) {
+    for (const barline of measure.barline) {
+      if (barline.location === 'left') {
+        xml += serializeBarline(barline);
+      }
+    }
+  }
+
+  // Attributes
+  if (measure.attributes) {
+    xml += serializeAttributes(measure.attributes);
+  }
+
+  // Directions
+  if (measure.direction) {
+    for (const direction of measure.direction) {
+      xml += serializeDirection(direction);
+    }
+  }
+
+  // Preprocess notes: resolve chords/beams/voices, apply staccato, build backup/forward events
+  for (const event of preprocessMeasure(measure.notes, divisions, tempo)) {
+    if (event.kind === 'backup') {
+      xml += `      <backup>\n`;
+      xml += `        <duration>${event.duration}</duration>\n`;
+      xml += `      </backup>\n`;
+    } else if (event.kind === 'forward') {
+      const { type: restType, dots: restDots } = midiTicksToXmlDurationType(event.duration, divisions);
+      xml += `      <note>\n`;
+      xml += `        <rest/>\n`;
+      xml += `        <duration>${event.duration}</duration>\n`;
+      xml += `        <voice>${event.voice}</voice>\n`;
+      xml += `        <type>${restType}</type>\n`;
+      if (restDots > 0) {
+        for (let i = 0; i < restDots; i++) {
+          xml += `        <dot/>\n`;
+        }
+      }
+      if (event.staff !== undefined) {
+        xml += `        <staff>${event.staff}</staff>\n`;
+      }
+      xml += `      </note>\n`;
+    } else {
+      xml += serializeNote(event.note);
+    }
+  }
+
+  // Barline (right/middle side)
+  if (measure.barline) {
+    for (const barline of measure.barline) {
+      if (barline.location !== 'left') {
+        xml += serializeBarline(barline);
+      }
+    }
+  }
+
+  xml += `    </measure>\n`;
+  return xml;
+}
+
+/**
+ * Serialize attributes element
+ */
+function serializeAttributes(attr: Attributes): string {
+  let xml = `      <attributes>\n`;
+
+  if (attr.divisions !== undefined) {
+    xml += `        <divisions>${attr.divisions}</divisions>\n`;
+  }
+
+  if (attr.key) {
+    xml += serializeKey(attr.key);
+  }
+
+  if (attr.time) {
+    xml += serializeTime(attr.time);
+  }
+
+  if (attr.staves !== undefined) {
+    xml += `        <staves>${attr.staves}</staves>\n`;
+  }
+
+  if (attr.clef) {
+    for (const clef of attr.clef) {
+      xml += serializeClef(clef);
+    }
+  }
+
+  xml += `      </attributes>\n`;
+  return xml;
+}
+
+/**
+ * Serialize key element
+ */
+function serializeKey(key: Key): string {
+  let xml = `        <key>\n`;
+  xml += `          <fifths>${key.fifths}</fifths>\n`;
+  if (key.mode) {
+    xml += `          <mode>${key.mode}</mode>\n`;
+  }
+  xml += `        </key>\n`;
+  return xml;
+}
+
+/**
+ * Serialize time element
+ */
+function serializeTime(time: Time): string {
+  let xml = `        <time>\n`;
+  xml += `          <beats>${time.beats}</beats>\n`;
+  xml += `          <beat-type>${time.beatType}</beat-type>\n`;
+  xml += `        </time>\n`;
+  return xml;
+}
+
+/**
+ * Serialize clef element
+ */
+function serializeClef(clef: Clef): string {
+  let xml = `        <clef`;
+  if (clef.number !== undefined) {
+    xml += ` number="${clef.number}"`;
+  }
+  xml += `>\n`;
+  xml += `          <sign>${clef.sign}</sign>\n`;
+  if (clef.line !== undefined) {
+    xml += `          <line>${clef.line}</line>\n`;
+  }
+  if (clef.clefOctaveChange !== undefined) {
+    xml += `          <clef-octave-change>${clef.clefOctaveChange}</clef-octave-change>\n`;
+  }
+  xml += `        </clef>\n`;
+  return xml;
+}
+
+/**
+ * Serialize direction element
+ */
+function serializeDirection(direction: Direction): string {
+  let xml = `      <direction`;
+  if (direction.placement) {
+    xml += ` placement="${direction.placement}"`;
+  }
+  xml += `>\n`;
+
+  for (const dirType of direction.directionType) {
+    xml += `        <direction-type>\n`;
+
+    if (dirType.words) {
+      let wordsXml = `          <words`;
+      if (dirType.words.fontSize) {
+        wordsXml += ` font-size="${dirType.words.fontSize}"`;
+      }
+      if (dirType.words.color) {
+        wordsXml += ` color="${dirType.words.color}"`;
+      }
+      wordsXml += `>${escapeXml(dirType.words.text)}</words>\n`;
+      xml += wordsXml;
+    }
+
+    if (dirType.pedal) {
+      let pedalXml = `          <pedal type="${dirType.pedal.type}"`;
+      if (dirType.pedal.line !== undefined) {
+        pedalXml += ` line="${dirType.pedal.line ? 'yes' : 'no'}"`;
+      }
+      pedalXml += `/>\n`;
+      xml += pedalXml;
+    }
+
+    xml += `        </direction-type>\n`;
+  }
+
+  if (direction.sound?.tempo !== undefined) {
+    xml += `        <sound tempo="${direction.sound.tempo}"/>\n`;
+  }
+
+  xml += `      </direction>\n`;
+  return xml;
+}
+
+/**
+ * Serialize note element
+ */
+function serializeNote(note: NoteElement): string {
+  let xml = `      <note>\n`;
+
+  // Chord element MUST come before pitch!
+  if (note.chord) {
+    xml += `        <chord/>\n`;
+  }
+
+  // Pitch
+  xml += `        <pitch>\n`;
+  xml += `          <step>${note.pitch.step}</step>\n`;
+  if (note.pitch.alter !== undefined) {
+    xml += `          <alter>${note.pitch.alter}</alter>\n`;
+  }
+  xml += `          <octave>${note.pitch.octave}</octave>\n`;
+  xml += `        </pitch>\n`;
+
+  // Duration
+  xml += `        <duration>${note.duration}</duration>\n`;
+
+  // Tie elements (must appear after <duration>, before <type>)
+  if (note.tie) {
+    for (const t of note.tie) {
+      xml += `        <tie type="${t.type}"/>\n`;
+    }
+  }
+
+  // Voice
+  if (note.voice !== undefined) {
+    xml += `        <voice>${note.voice}</voice>\n`;
+  }
+
+  // Type
+  xml += `        <type>${note.type}</type>\n`;
+
+  // Beam(s)
+  if (note.beam) {
+    for (const b of note.beam) {
+      const numAttr = b.number !== undefined ? ` number="${b.number}"` : '';
+      xml += `        <beam${numAttr}>${b.type}</beam>\n`;
+    }
+  }
+
+  // Dots
+  if (note.dot) {
+    for (let i = 0; i < note.dot; i++) {
+      xml += `        <dot/>\n`;
+    }
+  }
+
+  // Time modification (present on every note of a tuplet group, e.g. triplets)
+  if (note.timeModification) {
+    xml += `        <time-modification>\n`;
+    xml += `          <actual-notes>${note.timeModification.actualNotes}</actual-notes>\n`;
+    xml += `          <normal-notes>${note.timeModification.normalNotes}</normal-notes>\n`;
+    xml += `        </time-modification>\n`;
+  }
+
+  // Notations
+  if (note.notations) {
+    xml += `        <notations>\n`;
+
+    if (note.notations.tied) {
+      for (const tied of note.notations.tied) {
+        xml += `          <tied type="${tied.type}"/>\n`;
+      }
+    }
+
+    if (note.notations.tuplet) {
+      for (const tuplet of note.notations.tuplet) {
+        let tupletXml = `          <tuplet type="${tuplet.type}"`;
+        if (tuplet.bracket !== undefined) {
+          tupletXml += ` bracket="${tuplet.bracket ? 'yes' : 'no'}"`;
+        }
+        if (tuplet.number !== undefined) {
+          tupletXml += ` number="${tuplet.number}"`;
+        }
+        if (tuplet.showNumber) {
+          tupletXml += ` show-number="${tuplet.showNumber}"`;
+        }
+        tupletXml += `/>\n`;
+        xml += tupletXml;
+      }
+    }
+
+    if (note.notations.articulations) {
+      xml += `          <articulations>\n`;
+      for (const articulation of note.notations.articulations) {
+        xml += `            <${articulation.type}/>\n`;
+      }
+      xml += `          </articulations>\n`;
+    }
+
+    xml += `        </notations>\n`;
+  }
+
+  // Staff
+  if (note.staff !== undefined) {
+    xml += `        <staff>${note.staff}</staff>\n`;
+  }
+
+  xml += `      </note>\n`;
+  return xml;
+}
+
+/**
+ * Serialize print element
+ */
+function serializePrint(print: any): string {
+  let xml = `      <print`;
+  if (print.newSystem) {
+    xml += ` new-system="yes"`;
+  }
+  if (print.newPage) {
+    xml += ` new-page="yes"`;
+  }
+  xml += `/>\n`;
+  return xml;
+}
+
+/**
+ * Serialize barline element
+ */
+function serializeBarline(barline: any): string {
+  let xml = `      <barline location="${barline.location}">\n`;
+  if (barline.barStyle) {
+    xml += `        <bar-style>${barline.barStyle}</bar-style>\n`;
+  }
+  xml += `      </barline>\n`;
+  return xml;
+}
+
+/**
+ * Escape XML special characters
+ */
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}

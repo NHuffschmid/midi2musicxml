@@ -1,0 +1,58 @@
+{
+  "name": "midi2musicxml",
+  "version": "0.8.0",
+  "description": "Convert MIDI files to MusicXML",
+  "type": "module",
+  "main": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./react": "./react/index.ts"
+  },
+  "scripts": {
+    "test":          "vitest --run",
+    "test:watch":    "vitest",
+    "test:coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p example"
+  },
+  "dependencies": {
+    "@tonejs/midi": "^2.0.28",
+    "xml-formatter": "^3.6.7"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^18.0.0",
+    "jsdom": "^28.1.0",
+    "typescript": "^5.0.0",
+    "vitest": "^4.0.0"
+  },
+  "license": "MIT"
+  ,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NHuffschmid/midi2musicxml.git"
+  },
+  "homepage": "https://github.com/NHuffschmid/midi2musicxml#readme",
+  "bugs": {
+    "url": "https://github.com/NHuffschmid/midi2musicxml/issues"
+  },
+  "author": "Norbert Huffschmid <depinus@gmx.de>",
+  "keywords": [
+    "midi",
+    "musicxml",
+    "converter",
+    "music",
+    "notation",
+    "sheet-music"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
