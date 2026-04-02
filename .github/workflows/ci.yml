@@ -25,6 +25,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install example dependencies
+        run: npm ci
+        working-directory: example
+
       - name: TypeScript type check
         run: npm run typecheck
 
