@@ -7,15 +7,23 @@
 A TypeScript/JavaScript module for converting MIDI files to MusicXML.
 
 ## Features
-- Modular 6-stage pipeline: MIDI → MusicXML
+- Modular 7-stage pipeline: MIDI → MusicXML
 - Multi-voice, time/key signature, tempo
 - Chord, beam rest and staccato detection
 - Flexible staff assignment (piano, violin, viola, cello)
 - Works with [@tonejs/midi](https://www.npmjs.com/package/@tonejs/midi) and [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org/)
 
+
 ## Live Demo
 
-A live demo is available [here](https://nhuffschmid.github.io/midi2musicxml/).
+A live demo, where you can convert any midi file of your choice to MusicXML, is available [here](https://nhuffschmid.github.io/midi2musicxml/).
+
+An example application, that uses the Midi2MusicXML, looks like this:
+<p align="left">
+  <video src="https://nhuffschmid.github.io/midi2musicxml/elise.mp4" controls width="480">
+    Your browser does not support the video tag.
+  </video>
+</p>
 
 ## Installation
 
