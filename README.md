@@ -18,12 +18,7 @@ A TypeScript/JavaScript module for converting MIDI files to MusicXML.
 
 A live demo, where you can convert any midi file of your choice to MusicXML, is available [here](https://nhuffschmid.github.io/midi2musicxml/).
 
-An example application, that uses the Midi2MusicXML, looks like this:
-<p align="left">
-  <video src="https://nhuffschmid.github.io/midi2musicxml/elise.mp4" controls width="480">
-    Your browser does not support the video tag.
-  </video>
-</p>
+An example application, that uses the Midi2MusicXML module during midi playback, looks like [this](https://nhuffschmid.github.io/midi2musicxml/elise.mp4).
 
 ## Installation
 
