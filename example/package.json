@@ -7,8 +7,6 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "copy:video": "copy ..\\example\\elise.mp4 dist\\elise.mp4",
-    "predeploy": "npm run build && npm run copy:video",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {

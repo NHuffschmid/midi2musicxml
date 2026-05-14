@@ -190,11 +190,7 @@ export default function App() {
       </main>
 
       <footer className="App-footer">
-        <a
-          href="https://github.com/NHuffschmid/midi2musicxml#impressum--legal-notice"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={`${import.meta.env.BASE_URL}impressum/`}>
           Impressum / Legal Notice
         </a>
       </footer>
