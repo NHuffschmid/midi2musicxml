@@ -188,6 +188,16 @@ export default function App() {
         )}
 
       </main>
+
+      <footer className="App-footer">
+        <a
+          href="https://github.com/NHuffschmid/midi2musicxml#impressum--legal-notice"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Impressum / Legal Notice
+        </a>
+      </footer>
     </div>
   );
 }
